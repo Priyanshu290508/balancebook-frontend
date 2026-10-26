@@ -1,3 +1,4 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000";
@@ -7,6 +8,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
+    root: path.resolve(__dirname, ".."),
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

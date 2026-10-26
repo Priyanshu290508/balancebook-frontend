@@ -379,100 +379,166 @@ export default function ProductsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border/80 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3.5 sm:px-6 font-bold">{t("product_name", isEn ? "Product Name" : "सामान का नाम")}</th>
-                  <th className="px-4 py-3.5 font-bold">{t("category", isEn ? "Category" : "कैटेगरी")}</th>
-                  <th className="px-4 py-3.5 font-bold text-right">{t("stock", isEn ? "Stock" : "स्टॉक")}</th>
-                  <th className="px-4 py-3.5 font-bold text-right">{t("buy_rate", isEn ? "Avg Cost (Buy Rate)" : "खरीद दर")}</th>
-                  <th className="px-4 py-3.5 font-bold text-right">{t("sell_rate", isEn ? "Sell Rate" : "बिक्री दर")}</th>
-                  <th className="px-4 py-3.5 font-bold text-right">{t("margin", isEn ? "Margin ₹" : "मार्जिन ₹")}</th>
-                  <th className="px-4 py-3.5 sm:px-6 font-bold text-center">{t("margin_pct", isEn ? "Margin %" : "मार्जिन %")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredProducts.map((p) => {
-                  const { margin, marginPct, badgeColor } = calculateMargin(
-                    p.sell_price,
-                    p.avg_cost
-                  )
-                  const isLowStock = p.stock_qty <= p.low_stock_limit
+          <>
+            {/* Mobile Product Cards (Phone Optimized) */}
+            <div className="space-y-3 block md:hidden p-3">
+              {filteredProducts.map((p) => {
+                const { margin, marginPct, badgeColor } = calculateMargin(
+                  p.sell_price,
+                  p.avg_cost
+                )
+                const isLowStock = p.stock_qty <= p.low_stock_limit
 
-                  return (
-                    <tr
-                      key={p.id}
-                      className="hover:bg-muted/30 transition-colors group"
-                    >
-                      {/* Name */}
-                      <td className="px-4 py-4 sm:px-6 font-bold text-foreground">
-                        <div className="flex items-center gap-2">
+                return (
+                  <div
+                    key={p.id}
+                    className="p-3.5 rounded-2xl border border-border/80 bg-card space-y-2.5 shadow-2xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-bold text-foreground flex flex-wrap items-center gap-1.5">
                           <span>{formatProductName(p.name)}</span>
                           {isLowStock && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400">
-                              <AlertTriangle className="h-3 w-3" />
-                              {t("low_stock_alert", isEn ? "Low Stock Alert" : "कम स्टॉक")}
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/10 text-red-500 text-[9px] font-bold px-1.5 py-0.2 border border-red-500/20">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              {t("low_stock_alert", isEn ? "Low Stock" : "कम स्टॉक")}
                             </span>
                           )}
-                        </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="px-4 py-4 text-xs text-muted-foreground">
-                        <span className="rounded-full bg-muted px-2.5 py-1 font-semibold">
+                        </h4>
+                        <span className="text-[10px] text-muted-foreground mt-0.5 block">
                           {formatCategoryName(p.category)}
                         </span>
-                      </td>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                          badgeColor === "green"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            : badgeColor === "amber"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                        }`}
+                      >
+                        {marginPct}% Margin
+                      </span>
+                    </div>
 
-                      {/* Stock */}
-                      <td className="px-4 py-4 text-right font-medium">
-                        <span
-                          className={`font-black ${
-                            isLowStock
-                              ? "text-red-600 dark:text-red-400"
-                              : "text-foreground"
-                          }`}
-                        >
+                    <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[9px] text-muted-foreground block uppercase font-mono">Stock</span>
+                        <span className={`font-black ${isLowStock ? "text-red-500" : "text-foreground"}`}>
                           {p.stock_qty} {p.unit}
                         </span>
-                      </td>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-muted-foreground block uppercase font-mono">Buy Cost</span>
+                        <span className="font-semibold text-muted-foreground">{formatINR(p.avg_cost)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[9px] text-muted-foreground block uppercase font-mono">Sell Rate</span>
+                        <span className="font-black text-foreground">{formatINR(p.sell_price)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
 
-                      {/* Avg Cost */}
-                      <td className="px-4 py-4 text-right text-muted-foreground font-semibold">
-                        {formatINR(p.avg_cost)}
-                      </td>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[650px]">
+                <thead className="border-b border-border/80 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3.5 sm:px-6 font-bold">{t("product_name", isEn ? "Product Name" : "सामान का नाम")}</th>
+                    <th className="px-4 py-3.5 font-bold">{t("category", isEn ? "Category" : "कैटेगरी")}</th>
+                    <th className="px-4 py-3.5 font-bold text-right">{t("stock", isEn ? "Stock" : "स्टॉक")}</th>
+                    <th className="px-4 py-3.5 font-bold text-right">{t("buy_rate", isEn ? "Avg Cost (Buy Rate)" : "खरीद दर")}</th>
+                    <th className="px-4 py-3.5 font-bold text-right">{t("sell_rate", isEn ? "Sell Rate" : "बिक्री दर")}</th>
+                    <th className="px-4 py-3.5 font-bold text-right">{t("margin", isEn ? "Margin ₹" : "मार्जिन ₹")}</th>
+                    <th className="px-4 py-3.5 sm:px-6 font-bold text-center">{t("margin_pct", isEn ? "Margin %" : "मार्जिन %")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredProducts.map((p) => {
+                    const { margin, marginPct, badgeColor } = calculateMargin(
+                      p.sell_price,
+                      p.avg_cost
+                    )
+                    const isLowStock = p.stock_qty <= p.low_stock_limit
 
-                      {/* Sell Rate */}
-                      <td className="px-4 py-4 text-right font-black text-foreground">
-                        {formatINR(p.sell_price)}
-                      </td>
+                    return (
+                      <tr
+                        key={p.id}
+                        className="hover:bg-muted/30 transition-colors group"
+                      >
+                        {/* Name */}
+                        <td className="px-4 py-4 sm:px-6 font-bold text-foreground">
+                          <div className="flex items-center gap-2">
+                            <span>{formatProductName(p.name)}</span>
+                            {isLowStock && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400">
+                                <AlertTriangle className="h-3 w-3" />
+                                {t("low_stock_alert", isEn ? "Low Stock Alert" : "कम स्टॉक")}
+                              </span>
+                            )}
+                          </div>
+                        </td>
 
-                      {/* Margin Amount */}
-                      <td className="px-4 py-4 text-right font-black text-emerald-800 dark:text-emerald-300">
-                        +{formatINR(margin)}
-                      </td>
+                        {/* Category */}
+                        <td className="px-4 py-4 text-xs text-muted-foreground">
+                          <span className="rounded-full bg-muted px-2.5 py-1 font-semibold">
+                            {formatCategoryName(p.category)}
+                          </span>
+                        </td>
 
-                      {/* Margin % Chip */}
-                      <td className="px-4 py-4 sm:px-6 text-center">
-                        <span
-                          className={`inline-block rounded-full px-2.5 py-1 text-xs font-black shadow-2xs ${
-                            badgeColor === "green"
-                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
-                              : badgeColor === "amber"
-                              ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
-                              : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800"
-                          }`}
-                        >
-                          {marginPct}%
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                        {/* Stock */}
+                        <td className="px-4 py-4 text-right font-medium">
+                          <span
+                            className={`font-black ${
+                              isLowStock
+                                ? "text-red-600 dark:text-red-400"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {p.stock_qty} {p.unit}
+                          </span>
+                        </td>
+
+                        {/* Avg Cost */}
+                        <td className="px-4 py-4 text-right text-muted-foreground font-semibold">
+                          {formatINR(p.avg_cost)}
+                        </td>
+
+                        {/* Sell Rate */}
+                        <td className="px-4 py-4 text-right font-black text-foreground">
+                          {formatINR(p.sell_price)}
+                        </td>
+
+                        {/* Margin Amount */}
+                        <td className="px-4 py-4 text-right font-black text-emerald-800 dark:text-emerald-300">
+                          +{formatINR(margin)}
+                        </td>
+
+                        {/* Margin % Chip */}
+                        <td className="px-4 py-4 sm:px-6 text-center">
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-1 text-xs font-black shadow-2xs ${
+                              badgeColor === "green"
+                                ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                                : badgeColor === "amber"
+                                ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                                : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800"
+                            }`}
+                          >
+                            {marginPct}%
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
