@@ -4,7 +4,7 @@
 @layer base {
   :root {
     --brand: #10b981;
-    --background: transparent;
+    --background: #0c0c0c;
     --foreground: #ffffff;
     --card: rgba(14, 18, 24, 0.75);
     --card-foreground: #ffffff;
@@ -14,7 +14,7 @@
 
 @theme {
   --color-brand: #10b981;
-  --color-background: transparent;
+  --color-background: #0c0c0c;
   --color-foreground: #ffffff;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }

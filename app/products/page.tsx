@@ -79,7 +79,7 @@ export default function ProductsPage() {
     })
   }, [products, search, selectedCategory, formatProductName, formatCategoryName])
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
 
@@ -96,7 +96,7 @@ export default function ProductsPage() {
           : 5,
       })
 
-      addProduct({
+      await addProduct({
         name: parsed.name,
         category: parsed.category,
         unit: parsed.unit,
@@ -146,12 +146,12 @@ export default function ProductsPage() {
         {/* Add Product Button & Drawer */}
         <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
           <SheetTrigger asChild>
-            <Button className="bg-foreground text-background hover:bg-foreground/90 font-bold rounded-full gap-1.5 shadow-sm px-5 cursor-pointer">
-              <Plus className="h-4 w-4" />
+            <Button className="bg-white hover:bg-white/90 text-black font-bold rounded-full gap-1.5 shadow-sm px-5 cursor-pointer">
+              <Plus className="h-4 w-4 text-black" />
               {t("add_item", isEn ? "+ Add New Product" : "+ नया सामान जोड़ें")}
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[90%] sm:max-w-md overflow-y-auto">
+          <SheetContent side="right" className="w-[90%] sm:max-w-md overflow-y-auto bg-[#0e1218] border-l border-white/10 text-white">
             <SheetHeader className="text-left pb-4 border-b">
               <SheetTitle className="text-lg font-black flex items-center gap-2">
                 <Package className="h-5 w-5 text-emerald-700" />
@@ -356,8 +356,8 @@ export default function ProductsPage() {
               onClick={() => setSelectedCategory(cat)}
               className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 selectedCategory === cat
-                  ? "bg-foreground text-background shadow-xs"
-                  : "bg-card border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-white text-black shadow-xs"
+                  : "bg-card border border-border/80 text-muted-foreground hover:text-foreground hover:bg-white/10"
               }`}
             >
               {cat === "ALL" ? t("all_categories", isEn ? "All" : "सभी") : cat}

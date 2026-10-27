@@ -72,7 +72,7 @@ export default function HistoryPage() {
           onClick={() => setActiveTab("sales")}
           className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
             activeTab === "sales"
-              ? "bg-foreground text-background shadow-md"
+              ? "bg-white text-black shadow-md"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -84,7 +84,7 @@ export default function HistoryPage() {
           onClick={() => setActiveTab("purchases")}
           className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
             activeTab === "purchases"
-              ? "bg-foreground text-background shadow-md"
+              ? "bg-white text-black shadow-md"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -153,7 +153,7 @@ export default function HistoryPage() {
                         </span>
                       </div>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (
                             confirm(
                               isEn
@@ -161,7 +161,7 @@ export default function HistoryPage() {
                                 : "क्या आप यह बिक्री हटाना चाहते हैं? सामान का स्टॉक स्वतः वापस जुड़ जाएगा।"
                             )
                           ) {
-                            deleteSale(s.id)
+                            await deleteSale(s.id)
                           }
                         }}
                         className="rounded-xl p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer"
@@ -238,7 +238,7 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-4 py-4 sm:px-6 text-center">
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (
                                 confirm(
                                   isEn
@@ -246,7 +246,7 @@ export default function HistoryPage() {
                                     : "क्या आप यह बिक्री हटाना चाहते हैं? सामान का स्टॉक स्वतः वापस जुड़ जाएगा।"
                                 )
                               ) {
-                                deleteSale(s.id)
+                                await deleteSale(s.id)
                               }
                             }}
                             className="rounded-full p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
@@ -283,7 +283,7 @@ export default function HistoryPage() {
                         </span>
                       </div>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (
                             confirm(
                               isEn
@@ -291,7 +291,7 @@ export default function HistoryPage() {
                                 : "क्या आप यह खरीद रिकॉर्ड हटाना चाहते हैं? सामान का स्टॉक स्वतः वापस कम हो जाएगा।"
                             )
                           ) {
-                            deletePurchase(p.id)
+                            await deletePurchase(p.id)
                           }
                         }}
                         className="rounded-xl p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer"
@@ -357,7 +357,7 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-4 py-4 sm:px-6 text-center">
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (
                                 confirm(
                                   isEn
@@ -365,7 +365,7 @@ export default function HistoryPage() {
                                     : "क्या आप यह खरीद रिकॉर्ड हटाना चाहते हैं? सामान का स्टॉक स्वतः वापस कम हो जाएगा।"
                                 )
                               ) {
-                                deletePurchase(p.id)
+                                await deletePurchase(p.id)
                               }
                             }}
                             className="rounded-full p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"

@@ -61,7 +61,7 @@ export default function SalesPage() {
     return calculateSaleProfit(enteredQty, rate, selectedProduct.avg_cost)
   }, [selectedProduct, enteredQty, sellPerUnit])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
 
@@ -82,7 +82,7 @@ export default function SalesPage() {
         sold_at: soldAt,
       })
 
-      const newSale = addSale({
+      const newSale = await addSale({
         product_id: parsed.product_id,
         qty: parsed.qty,
         sell_per_unit: parsed.sell_per_unit,

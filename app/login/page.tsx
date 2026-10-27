@@ -49,7 +49,7 @@ export default function LoginPage() {
         
         {/* Logo & Headline */}
         <div className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-foreground text-background shadow-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 border border-white/20 text-white shadow-xl">
             <Store className="h-8 w-8 text-emerald-400" />
           </div>
           <h1 className="mt-4 text-2xl font-black tracking-tight text-foreground sm:text-3xl">
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-foreground text-background hover:bg-foreground/90 font-bold h-12 rounded-full shadow-lg text-sm cursor-pointer"
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold h-12 rounded-full shadow-lg text-sm cursor-pointer"
             >
               {loading
                 ? isEn

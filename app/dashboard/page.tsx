@@ -122,19 +122,26 @@ export default function DashboardPage() {
   }, [products, language])
 
   // Trigger quick 1-tap sale from row
-  const handleQuickSale = (product: (typeof tableRows)[0]) => {
+  const handleQuickSale = async (product: (typeof tableRows)[0]) => {
     if (product.rawStock <= 0) return
     const profit = Math.round((product.rawSell - product.rawCost) * 100) / 100
-    addSale({
-      product_id: product.id,
-      qty: 1,
-      sell_per_unit: product.rawSell,
-      sold_at: new Date().toISOString().split("T")[0],
-    })
-    setConsoleToast({
-      title: "1-Tap Sale Logged",
-      subtitle: `${product.displayName} · +₹${profit} Profit recorded`,
-    })
+    try {
+      await addSale({
+        product_id: product.id,
+        qty: 1,
+        sell_per_unit: product.rawSell,
+        sold_at: new Date().toISOString().split("T")[0],
+      })
+      setConsoleToast({
+        title: "1-Tap Sale Logged",
+        subtitle: `${product.displayName} · +₹${profit} Profit recorded`,
+      })
+    } catch (err: any) {
+      setConsoleToast({
+        title: "Sale Failed",
+        subtitle: err.message || "Could not log sale",
+      })
+    }
   }
 
   // Navigation Items with descriptive store names

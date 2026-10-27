@@ -69,7 +69,7 @@ export default function PurchasesPage() {
     return { totalCost, newStock, newAvgCost }
   }, [selectedProduct, qty, costPerUnit])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
 
@@ -82,7 +82,7 @@ export default function PurchasesPage() {
         purchased_at: purchasedAt,
       })
 
-      const newRecord = addPurchase({
+      const newRecord = await addPurchase({
         product_id: parsed.product_id,
         qty: parsed.qty,
         cost_per_unit: parsed.cost_per_unit,

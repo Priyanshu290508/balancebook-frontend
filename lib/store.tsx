@@ -10,10 +10,12 @@ import {
   formatItemNameByLang,
   formatCategoryByLang,
 } from "./calc"
+import { supabase, isSupabaseConfigured } from "./supabase/client"
 
+// Fallback seed items for initial render when Supabase keys are not yet added
 const INITIAL_PRODUCTS: ProductItem[] = [
   {
-    id: "p-1",
+    id: "a0000000-0000-0000-0000-000000000001",
     name: "Basmati Rice",
     category: "Grains",
     unit: "kg",
@@ -24,7 +26,7 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     is_active: true,
   },
   {
-    id: "p-2",
+    id: "a0000000-0000-0000-0000-000000000002",
     name: "Arhar Dal (Toor Dal)",
     category: "Pulses",
     unit: "kg",
@@ -35,18 +37,18 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     is_active: true,
   },
   {
-    id: "p-3",
+    id: "a0000000-0000-0000-0000-000000000003",
     name: "Fortune Mustard Oil",
     category: "Cooking Oil",
     unit: "L",
     sell_price: 165.0,
     avg_cost: 142.0,
-    stock_qty: 4.0, // Low stock
+    stock_qty: 4.0, // Low stock alert
     low_stock_limit: 6.0,
     is_active: true,
   },
   {
-    id: "p-4",
+    id: "a0000000-0000-0000-0000-000000000004",
     name: "Tata Salt 1kg",
     category: "Spices & Salt",
     unit: "packet",
@@ -57,7 +59,7 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     is_active: true,
   },
   {
-    id: "p-5",
+    id: "a0000000-0000-0000-0000-000000000005",
     name: "Aashirvaad Atta 5kg",
     category: "Grains",
     unit: "packet",
@@ -68,7 +70,7 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     is_active: true,
   },
   {
-    id: "p-6",
+    id: "a0000000-0000-0000-0000-000000000006",
     name: "Amul Taaza Milk 500ml",
     category: "Dairy",
     unit: "packet",
@@ -79,7 +81,7 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     is_active: true,
   },
   {
-    id: "p-7",
+    id: "a0000000-0000-0000-0000-000000000007",
     name: "MDH Turmeric Powder 100g",
     category: "Spices",
     unit: "packet",
@@ -90,7 +92,7 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     is_active: true,
   },
   {
-    id: "p-8",
+    id: "a0000000-0000-0000-0000-000000000008",
     name: "Sugar Regular",
     category: "Grocery",
     unit: "kg",
@@ -100,61 +102,50 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     low_stock_limit: 20.0,
     is_active: true,
   },
-  {
-    id: "p-9",
-    name: "Parle-G Biscuit 100g",
-    category: "Snacks",
-    unit: "packet",
-    sell_price: 10.0,
-    avg_cost: 8.2,
-    stock_qty: 60.0,
-    low_stock_limit: 15.0,
-    is_active: true,
-  },
-  {
-    id: "p-10",
-    name: "Rajdhani Besan 500g",
-    category: "Pulses",
-    unit: "packet",
-    sell_price: 55.0,
-    avg_cost: 46.0,
-    stock_qty: 3.0, // Low stock
-    low_stock_limit: 6.0,
-    is_active: true,
-  },
 ]
 
-const INITIAL_DATE = "2026-10-25"
+const INITIAL_DATE = new Date().toISOString().split("T")[0]
 
 const INITIAL_PURCHASES: PurchaseRecord[] = [
   {
-    id: "pur-1",
-    product_id: "p-1",
+    id: "b0000000-0000-0000-0000-000000000001",
+    product_id: "a0000000-0000-0000-0000-000000000001",
     product_name: "Basmati Rice",
-    supplier: "Kisan Mandi Traders",
     qty: 50,
     cost_per_unit: 48,
     total_cost: 2400,
+    supplier: "Kisan Mandi",
     purchased_at: INITIAL_DATE,
-    created_at: "2026-10-25T10:00:00.000Z",
+    created_at: new Date().toISOString(),
   },
   {
-    id: "pur-2",
-    product_id: "p-2",
+    id: "b0000000-0000-0000-0000-000000000002",
+    product_id: "a0000000-0000-0000-0000-000000000002",
     product_name: "Arhar Dal (Toor Dal)",
-    supplier: "Agrawal Wholesale",
     qty: 30,
     cost_per_unit: 115,
     total_cost: 3450,
+    supplier: "Shree Ganesh Traders",
     purchased_at: INITIAL_DATE,
-    created_at: "2026-10-25T10:30:00.000Z",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "b0000000-0000-0000-0000-000000000003",
+    product_id: "a0000000-0000-0000-0000-000000000003",
+    product_name: "Fortune Mustard Oil",
+    qty: 10,
+    cost_per_unit: 142,
+    total_cost: 1420,
+    supplier: "Adani Wilmar Dist.",
+    purchased_at: INITIAL_DATE,
+    created_at: new Date().toISOString(),
   },
 ]
 
 const INITIAL_SALES: SaleRecord[] = [
   {
-    id: "sale-1",
-    product_id: "p-1",
+    id: "c0000000-0000-0000-0000-000000000001",
+    product_id: "a0000000-0000-0000-0000-000000000001",
     product_name: "Basmati Rice",
     qty: 5,
     sell_per_unit: 60,
@@ -162,11 +153,11 @@ const INITIAL_SALES: SaleRecord[] = [
     total_sale: 300,
     profit: 60,
     sold_at: INITIAL_DATE,
-    created_at: "2026-10-25T11:00:00.000Z",
+    created_at: new Date().toISOString(),
   },
   {
-    id: "sale-2",
-    product_id: "p-2",
+    id: "c0000000-0000-0000-0000-000000000002",
+    product_id: "a0000000-0000-0000-0000-000000000002",
     product_name: "Arhar Dal (Toor Dal)",
     qty: 2,
     sell_per_unit: 140,
@@ -174,7 +165,7 @@ const INITIAL_SALES: SaleRecord[] = [
     total_sale: 280,
     profit: 50,
     sold_at: INITIAL_DATE,
-    created_at: "2026-10-25T11:30:00.000Z",
+    created_at: new Date().toISOString(),
   },
 ]
 
@@ -182,23 +173,27 @@ interface StoreContextType {
   products: ProductItem[]
   purchases: PurchaseRecord[]
   sales: SaleRecord[]
-  addProduct: (product: Omit<ProductItem, "id" | "is_active">) => ProductItem
+  isLoading: boolean
+  isRealtime: boolean
+  isSupabase: boolean
+  addProduct: (product: Omit<ProductItem, "id" | "is_active">) => Promise<ProductItem>
   addPurchase: (data: {
     product_id: string
     qty: number
     cost_per_unit: number
     supplier?: string
     purchased_at: string
-  }) => PurchaseRecord
+  }) => Promise<PurchaseRecord>
   addSale: (data: {
     product_id: string
     qty: number
     sell_per_unit: number
     sold_at: string
-  }) => SaleRecord
-  deleteSale: (id: string) => void
-  deletePurchase: (id: string) => void
+  }) => Promise<SaleRecord>
+  deleteSale: (id: string) => Promise<void>
+  deletePurchase: (id: string) => Promise<void>
   resetToDefault: () => void
+  refreshData: () => Promise<void>
   metrics: {
     todaySales: number
     todayProfit: number
@@ -216,343 +211,415 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = React.useState<ProductItem[]>(INITIAL_PRODUCTS)
   const [purchases, setPurchases] = React.useState<PurchaseRecord[]>(INITIAL_PURCHASES)
   const [sales, setSales] = React.useState<SaleRecord[]>(INITIAL_SALES)
-  const [isInitialized, setIsInitialized] = React.useState(false)
-
-  // Load from localStorage & backend on client mount
-  React.useEffect(() => {
-    try {
-      const savedProducts =
-        localStorage.getItem("balancebook_products") ||
-        localStorage.getItem("dukan_khata_products")
-      const savedPurchases =
-        localStorage.getItem("balancebook_purchases") ||
-        localStorage.getItem("dukan_khata_purchases")
-      const savedSales =
-        localStorage.getItem("balancebook_sales") ||
-        localStorage.getItem("dukan_khata_sales")
-
-      if (savedProducts) {
-        const parsed = JSON.parse(savedProducts)
-        setProducts(
-          parsed.map((p: any) => ({
-            ...p,
-            name: formatItemNameByLang(p.name, "en"),
-            category: formatCategoryByLang(p.category, "en"),
-          }))
-        )
-      }
-      if (savedPurchases) {
-        const parsed = JSON.parse(savedPurchases)
-        setPurchases(
-          parsed.map((p: any) => ({
-            ...p,
-            product_name: formatItemNameByLang(p.product_name, "en"),
-          }))
-        )
-      }
-      if (savedSales) {
-        const parsed = JSON.parse(savedSales)
-        setSales(
-          parsed.map((s: any) => ({
-            ...s,
-            product_name: formatItemNameByLang(s.product_name, "en"),
-          }))
-        )
-      }
-    } catch (e) {
-      console.warn("Could not load from localStorage:", e)
-    } finally {
-      setIsInitialized(true)
-    }
-
-    // Background sync with backend API
-    const syncBackend = async () => {
-      try {
-        const [prodRes, purRes, saleRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/purchases"),
-          fetch("/api/sales"),
-        ])
-
-        if (prodRes.ok) {
-          const prodData = await prodRes.json()
-          if (prodData.success && prodData.data?.length > 0) {
-            setProducts(prodData.data)
-          }
-        }
-        if (purRes.ok) {
-          const purData = await purRes.json()
-          if (purData.success && purData.data?.length > 0) {
-            setPurchases(purData.data)
-          }
-        }
-        if (saleRes.ok) {
-          const saleData = await saleRes.json()
-          if (saleData.success && saleData.data?.length > 0) {
-            setSales(saleData.data)
-          }
-        }
-      } catch (err) {
-        // Safe offline / dev fallback
-        console.debug("Backend sync skipped (offline or initial boot):", err)
-      }
-    }
-
-    syncBackend()
-  }, [])
-
-  // Save to localStorage when state changes
-  React.useEffect(() => {
-    if (!isInitialized) return
-    try {
-      localStorage.setItem("balancebook_products", JSON.stringify(products))
-      localStorage.setItem("balancebook_purchases", JSON.stringify(purchases))
-      localStorage.setItem("balancebook_sales", JSON.stringify(sales))
-    } catch (e) {
-      console.warn("Could not save to localStorage:", e)
-    }
-  }, [products, purchases, sales, isInitialized])
-
-  // ADD PRODUCT (Optimistic + Backend API)
-  const addProduct = React.useCallback(
-    (data: Omit<ProductItem, "id" | "is_active">) => {
-      const newProduct: ProductItem = {
-        ...data,
-        id: `p-${Date.now()}`,
-        is_active: true,
-      }
-      setProducts((prev) => [newProduct, ...prev])
-
-      // Sync to backend asynchronously
-      fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-        .then((res) => res.json())
-        .then((resData) => {
-          if (resData.success && resData.data?.id) {
-            // Replace temporary ID with server ID if needed
-            setProducts((prev) =>
-              prev.map((p) => (p.id === newProduct.id ? resData.data : p))
-            )
-          }
-        })
-        .catch((err) => console.warn("Backend product sync error:", err))
-
-      return newProduct
-    },
-    []
-  )
-
-  // ADD PURCHASE (Implements DB Trigger 1 logic + Backend API)
-  const addPurchase = React.useCallback(
-    (data: {
-      product_id: string
-      qty: number
-      cost_per_unit: number
-      supplier?: string
-      purchased_at: string
-    }) => {
-      const product = products.find((p) => p.id === data.product_id)
-      if (!product) throw new Error("सामान नहीं मिला (Product not found)")
-
-      // Calculate weighted average cost & stock update
-      const { newStock, newAvgCost } = calculateWeightedAverage(
-        product.stock_qty,
-        product.avg_cost,
-        data.qty,
-        data.cost_per_unit
-      )
-
-      // Update product in memory
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === data.product_id
-            ? { ...p, stock_qty: newStock, avg_cost: newAvgCost }
-            : p
-        )
-      )
-
-      const total_cost = Math.round(data.qty * data.cost_per_unit * 100) / 100
-      const newPurchase: PurchaseRecord = {
-        id: `pur-${Date.now()}`,
-        product_id: data.product_id,
-        product_name: product.name,
-        supplier: data.supplier,
-        qty: data.qty,
-        cost_per_unit: data.cost_per_unit,
-        total_cost,
-        purchased_at: data.purchased_at,
-        created_at: new Date().toISOString(),
-      }
-
-      setPurchases((prev) => [newPurchase, ...prev])
-
-      // Sync to backend asynchronously
-      fetch("/api/purchases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-        .then((res) => res.json())
-        .then((resData) => {
-          if (resData.success && resData.data?.id) {
-            setPurchases((prev) =>
-              prev.map((item) => (item.id === newPurchase.id ? resData.data : item))
-            )
-          }
-        })
-        .catch((err) => console.warn("Backend purchase sync error:", err))
-
-      return newPurchase
-    },
-    [products]
-  )
-
-  // ADD SALE (Implements DB Trigger 2 & 3 logic: no negative stock + Backend API)
-  const addSale = React.useCallback(
-    (data: {
-      product_id: string
-      qty: number
-      sell_per_unit: number
-      sold_at: string
-    }) => {
-      const product = products.find((p) => p.id === data.product_id)
-      if (!product) throw new Error("सामान नहीं मिला (Product not found)")
-
-      // Stock check: NO NEGATIVE STOCK
-      if (product.stock_qty < data.qty) {
-        throw new Error(
-          `स्टॉक पर्याप्त नहीं है! उपलब्ध: ${product.stock_qty} ${product.unit}, दर्ज की गई मात्रा: ${data.qty}`
-        )
-      }
-
-      // Snapshot cost at time of sale
-      const cost_at_sale = product.avg_cost
-      const { totalSale, profit } = calculateSaleProfit(
-        data.qty,
-        data.sell_per_unit,
-        cost_at_sale
-      )
-
-      // Deduct stock
-      const updatedStock = Math.max(0, product.stock_qty - data.qty)
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === data.product_id ? { ...p, stock_qty: updatedStock } : p
-        )
-      )
-
-      const newSale: SaleRecord = {
-        id: `sale-${Date.now()}`,
-        product_id: data.product_id,
-        product_name: product.name,
-        qty: data.qty,
-        sell_per_unit: data.sell_per_unit,
-        cost_at_sale,
-        total_sale: totalSale,
-        profit,
-        sold_at: data.sold_at,
-        created_at: new Date().toISOString(),
-      }
-
-      setSales((prev) => [newSale, ...prev])
-
-      // Sync to backend asynchronously
-      fetch("/api/sales", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-        .then((res) => res.json())
-        .then((resData) => {
-          if (resData.success && resData.data?.id) {
-            setSales((prev) =>
-              prev.map((item) => (item.id === newSale.id ? resData.data : item))
-            )
-          }
-        })
-        .catch((err) => console.warn("Backend sale sync error:", err))
-
-      return newSale
-    },
-    [products]
-  )
-
-  // DELETE SALE (Reverts stock + Backend API)
-  const deleteSale = React.useCallback(
-    (id: string) => {
-      const sale = sales.find((s) => s.id === id)
-      if (!sale) return
-
-      // Revert stock back
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === sale.product_id
-            ? { ...p, stock_qty: p.stock_qty + sale.qty }
-            : p
-        )
-      )
-
-      setSales((prev) => prev.filter((s) => s.id !== id))
-
-      // Sync deletion to backend
-      fetch(`/api/sales/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      }).catch((err) => console.warn("Backend delete sale error:", err))
-    },
-    [sales]
-  )
-
-  // DELETE PURCHASE (Reverts purchase and deducts stock + Backend API)
-  const deletePurchase = React.useCallback(
-    (id: string) => {
-      const purchase = purchases.find((p) => p.id === id)
-      if (!purchase) return
-
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === purchase.product_id
-            ? { ...p, stock_qty: Math.max(0, p.stock_qty - purchase.qty) }
-            : p
-        )
-      )
-
-      setPurchases((prev) => prev.filter((p) => p.id !== id))
-
-      // Sync deletion to backend
-      fetch(`/api/purchases/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      }).catch((err) => console.warn("Backend delete purchase error:", err))
-    },
-    [purchases]
-  )
-
-  const resetToDefault = React.useCallback(() => {
-    setProducts(INITIAL_PRODUCTS)
-    setPurchases(INITIAL_PURCHASES)
-    setSales(INITIAL_SALES)
-    try {
-      localStorage.removeItem("balancebook_products")
-      localStorage.removeItem("balancebook_purchases")
-      localStorage.removeItem("balancebook_sales")
-      localStorage.removeItem("dukan_khata_products")
-      localStorage.removeItem("dukan_khata_purchases")
-      localStorage.removeItem("dukan_khata_sales")
-    } catch {}
-  }, [])
-
+  const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const [isRealtime, setIsRealtime] = React.useState<boolean>(false)
   const [todayDate, setTodayDate] = React.useState(INITIAL_DATE)
 
   React.useEffect(() => {
     setTodayDate(new Date().toISOString().split("T")[0])
   }, [])
 
-  // REALTIME METRICS COMPUTATION
+  // LOAD DATA DIRECTLY FROM SUPABASE POSTGRES
+  const loadData = React.useCallback(async () => {
+    if (!isSupabaseConfigured || !supabase) return
+
+    try {
+      setIsLoading(true)
+      const [prodRes, purRes, saleRes] = await Promise.all([
+        supabase
+          .from("products")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("purchases")
+          .select("*")
+          .order("purchased_at", { ascending: false }),
+        supabase
+          .from("sales")
+          .select("*")
+          .order("sold_at", { ascending: false }),
+      ])
+
+      if (prodRes.data && prodRes.data.length > 0) {
+        setProducts(
+          prodRes.data.map((p: any) => ({
+            id: p.id,
+            name: formatItemNameByLang(p.name, "en"),
+            category: formatCategoryByLang(p.category, "en"),
+            unit: p.unit,
+            sell_price: Number(p.sell_price),
+            avg_cost: Number(p.avg_cost),
+            stock_qty: Number(p.stock_qty),
+            low_stock_limit: Number(p.low_stock_limit),
+            is_active: p.is_active,
+          }))
+        )
+      }
+
+      if (purRes.data) {
+        setPurchases(
+          purRes.data.map((p: any) => ({
+            id: p.id,
+            product_id: p.product_id,
+            product_name: formatItemNameByLang(p.product_name || "सामान", "en"),
+            supplier: p.supplier || undefined,
+            qty: Number(p.qty),
+            cost_per_unit: Number(p.cost_per_unit),
+            total_cost: Number(p.total_cost),
+            purchased_at: p.purchased_at,
+            created_at: p.created_at,
+          }))
+        )
+      }
+
+      if (saleRes.data) {
+        setSales(
+          saleRes.data.map((s: any) => ({
+            id: s.id,
+            product_id: s.product_id,
+            product_name: formatItemNameByLang(s.product_name || "सामान", "en"),
+            qty: Number(s.qty),
+            sell_per_unit: Number(s.sell_per_unit),
+            cost_at_sale: Number(s.cost_at_sale),
+            total_sale: Number(s.total_sale),
+            profit: Number(s.profit),
+            sold_at: s.sold_at,
+            created_at: s.created_at,
+          }))
+        )
+      }
+    } catch (err) {
+      console.error("Supabase data fetch error:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // SUPABASE REALTIME SUBSCRIPTION (Instant sync without page reload)
+  React.useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return
+
+    loadData()
+
+    const channel = supabase
+      .channel("balancebook-realtime-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "purchases" },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sales" },
+        () => loadData()
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsRealtime(true)
+        }
+      })
+
+    return () => {
+      supabase?.removeChannel(channel)
+    }
+  }, [loadData])
+
+  // ADD PRODUCT (Direct Supabase Insert)
+  const addProduct = React.useCallback(
+    async (data: Omit<ProductItem, "id" | "is_active">): Promise<ProductItem> => {
+      if (!isSupabaseConfigured || !supabase) {
+        const localProduct: ProductItem = {
+          ...data,
+          id: `prod_${Date.now()}`,
+          is_active: true,
+        }
+        setProducts((prev) => [localProduct, ...prev])
+        return localProduct
+      }
+
+      const { data: userAuth } = await supabase.auth.getUser()
+      const { data: inserted, error } = await supabase
+        .from("products")
+        .insert([
+          {
+            name: data.name.trim(),
+            category: data.category,
+            unit: data.unit,
+            sell_price: Number(data.sell_price),
+            avg_cost: Number(data.avg_cost) || 0,
+            stock_qty: Number(data.stock_qty) || 0,
+            low_stock_limit: Number(data.low_stock_limit) || 5,
+            is_active: true,
+            user_id: userAuth?.user?.id || null,
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      const formatted: ProductItem = {
+        id: inserted.id,
+        name: inserted.name,
+        category: inserted.category,
+        unit: inserted.unit,
+        sell_price: Number(inserted.sell_price),
+        avg_cost: Number(inserted.avg_cost),
+        stock_qty: Number(inserted.stock_qty),
+        low_stock_limit: Number(inserted.low_stock_limit),
+        is_active: inserted.is_active,
+      }
+
+      setProducts((prev) => [formatted, ...prev])
+      return formatted
+    },
+    []
+  )
+
+  // ADD PURCHASE (Database Trigger 1 updates stock & weighted avg in Supabase)
+  const addPurchase = React.useCallback(
+    async (data: {
+      product_id: string
+      qty: number
+      cost_per_unit: number
+      supplier?: string
+      purchased_at: string
+    }): Promise<PurchaseRecord> => {
+      const product = products.find((p) => p.id === data.product_id)
+      if (!product) throw new Error("सामान नहीं मिला (Product not found)")
+
+      if (!isSupabaseConfigured || !supabase) {
+        const { newStock, newAvgCost } = calculateWeightedAverage(
+          product.stock_qty,
+          product.avg_cost,
+          data.qty,
+          data.cost_per_unit
+        )
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === data.product_id
+              ? { ...p, stock_qty: newStock, avg_cost: newAvgCost }
+              : p
+          )
+        )
+        const total_cost = Math.round(data.qty * data.cost_per_unit * 100) / 100
+        const localPurchase: PurchaseRecord = {
+          id: `pur_${Date.now()}`,
+          product_id: data.product_id,
+          product_name: product.name,
+          supplier: data.supplier,
+          qty: data.qty,
+          cost_per_unit: data.cost_per_unit,
+          total_cost,
+          purchased_at: data.purchased_at,
+          created_at: new Date().toISOString(),
+        }
+        setPurchases((prev) => [localPurchase, ...prev])
+        return localPurchase
+      }
+
+      const { data: userAuth } = await supabase.auth.getUser()
+      const { data: inserted, error } = await supabase
+        .from("purchases")
+        .insert([
+          {
+            product_id: data.product_id,
+            product_name: product.name,
+            qty: data.qty,
+            cost_per_unit: data.cost_per_unit,
+            supplier: data.supplier || null,
+            purchased_at: data.purchased_at,
+            user_id: userAuth?.user?.id || null,
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      const formatted: PurchaseRecord = {
+        id: inserted.id,
+        product_id: inserted.product_id,
+        product_name: inserted.product_name || product.name,
+        supplier: inserted.supplier || undefined,
+        qty: Number(inserted.qty),
+        cost_per_unit: Number(inserted.cost_per_unit),
+        total_cost: Number(inserted.total_cost),
+        purchased_at: inserted.purchased_at,
+        created_at: inserted.created_at,
+      }
+
+      setPurchases((prev) => [formatted, ...prev])
+      await loadData()
+      return formatted
+    },
+    [products, loadData]
+  )
+
+  // ADD SALE (Database Trigger 2 validates stock, snapshots cost, calculates profit)
+  const addSale = React.useCallback(
+    async (data: {
+      product_id: string
+      qty: number
+      sell_per_unit: number
+      sold_at: string
+    }): Promise<SaleRecord> => {
+      const product = products.find((p) => p.id === data.product_id)
+      if (!product) throw new Error("सामान नहीं मिला (Product not found)")
+
+      if (product.stock_qty < data.qty) {
+        throw new Error(
+          `स्टॉक पर्याप्त नहीं है! उपलब्ध: ${product.stock_qty} ${product.unit}, दर्ज की गई मात्रा: ${data.qty}`
+        )
+      }
+
+      if (!isSupabaseConfigured || !supabase) {
+        const cost_at_sale = product.avg_cost
+        const { totalSale, profit } = calculateSaleProfit(
+          data.qty,
+          data.sell_per_unit,
+          cost_at_sale
+        )
+        const updatedStock = Math.max(0, product.stock_qty - data.qty)
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === data.product_id ? { ...p, stock_qty: updatedStock } : p
+          )
+        )
+        const localSale: SaleRecord = {
+          id: `sale_${Date.now()}`,
+          product_id: data.product_id,
+          product_name: product.name,
+          qty: data.qty,
+          sell_per_unit: data.sell_per_unit,
+          cost_at_sale,
+          total_sale: totalSale,
+          profit,
+          sold_at: data.sold_at,
+          created_at: new Date().toISOString(),
+        }
+        setSales((prev) => [localSale, ...prev])
+        return localSale
+      }
+
+      const { data: userAuth } = await supabase.auth.getUser()
+      const { data: inserted, error } = await supabase
+        .from("sales")
+        .insert([
+          {
+            product_id: data.product_id,
+            product_name: product.name,
+            qty: data.qty,
+            sell_per_unit: data.sell_per_unit,
+            sold_at: data.sold_at,
+            user_id: userAuth?.user?.id || null,
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      const formatted: SaleRecord = {
+        id: inserted.id,
+        product_id: inserted.product_id,
+        product_name: inserted.product_name || product.name,
+        qty: Number(inserted.qty),
+        sell_per_unit: Number(inserted.sell_per_unit),
+        cost_at_sale: Number(inserted.cost_at_sale),
+        total_sale: Number(inserted.total_sale),
+        profit: Number(inserted.profit),
+        sold_at: inserted.sold_at,
+        created_at: inserted.created_at,
+      }
+
+      setSales((prev) => [formatted, ...prev])
+      await loadData()
+      return formatted
+    },
+    [products, loadData]
+  )
+
+  // DELETE SALE (Database Trigger 4 restores stock in Supabase automatically)
+  const deleteSale = React.useCallback(
+    async (id: string): Promise<void> => {
+      if (!isSupabaseConfigured || !supabase) {
+        const sale = sales.find((s) => s.id === id)
+        if (sale) {
+          setProducts((prev) =>
+            prev.map((p) =>
+              p.id === sale.product_id
+                ? { ...p, stock_qty: p.stock_qty + sale.qty }
+                : p
+            )
+          )
+          setSales((prev) => prev.filter((s) => s.id !== id))
+        }
+        return
+      }
+
+      const { error } = await supabase.from("sales").delete().eq("id", id)
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      setSales((prev) => prev.filter((s) => s.id !== id))
+      await loadData()
+    },
+    [sales, loadData]
+  )
+
+  // DELETE PURCHASE (Database Trigger 2 reverts stock in Supabase automatically)
+  const deletePurchase = React.useCallback(
+    async (id: string): Promise<void> => {
+      if (!isSupabaseConfigured || !supabase) {
+        const purchase = purchases.find((p) => p.id === id)
+        if (purchase) {
+          setProducts((prev) =>
+            prev.map((p) =>
+              p.id === purchase.product_id
+                ? { ...p, stock_qty: Math.max(0, p.stock_qty - purchase.qty) }
+                : p
+            )
+          )
+          setPurchases((prev) => prev.filter((p) => p.id !== id))
+        }
+        return
+      }
+
+      const { error } = await supabase.from("purchases").delete().eq("id", id)
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      setPurchases((prev) => prev.filter((p) => p.id !== id))
+      await loadData()
+    },
+    [purchases, loadData]
+  )
+
+  const resetToDefault = React.useCallback(() => {
+    setProducts(INITIAL_PRODUCTS)
+    setPurchases(INITIAL_PURCHASES)
+    setSales(INITIAL_SALES)
+  }, [])
+
+  // FINANCIAL & INVENTORY METRICS
   const metrics = React.useMemo(() => {
     const today = todayDate
-    const currentMonth = today.slice(0, 7) // YYYY-MM
+    const currentMonth = today.slice(0, 7)
 
     let todaySales = 0
     let todayProfit = 0
@@ -604,7 +671,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       lowStockProducts,
       topProfitProducts,
     }
-  }, [products, purchases, sales])
+  }, [products, purchases, sales, todayDate])
 
   return (
     <StoreContext.Provider
@@ -612,12 +679,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         products,
         purchases,
         sales,
+        isLoading,
+        isRealtime,
+        isSupabase: isSupabaseConfigured,
         addProduct,
         addPurchase,
         addSale,
         deleteSale,
         deletePurchase,
         resetToDefault,
+        refreshData: loadData,
         metrics,
       }}
     >
