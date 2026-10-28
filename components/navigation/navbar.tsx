@@ -10,11 +10,14 @@ import { useTranslation } from "@/lib/i18n"
 import { formatINR } from "@/lib/calc"
 import { LanguageModal } from "./language-modal"
 import { ThemeToggle } from "./theme-toggle"
+import { useAuth } from "@/lib/auth"
+import { LogOut, User } from "lucide-react"
 
 export function AppNavbar() {
   const pathname = usePathname()
   const { metrics } = useStore()
   const { t, isEn } = useTranslation()
+  const { user, signOut } = useAuth()
 
   if (pathname === "/") {
     return null
@@ -162,8 +165,30 @@ export function AppNavbar() {
           </Link>
         </div>
 
-        {/* Global Controls: Language Converter & Theme Toggle */}
+        {/* Global Controls: User Status, Logout & Language */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {user ? (
+            <div className="hidden sm:flex items-center gap-2 rounded-xl bg-white/10 px-2.5 py-1 text-xs">
+              <User className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="max-w-[120px] truncate text-white/80" title={user.email || ""}>
+                {user.email}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="text-white/60 hover:text-red-400 p-1 cursor-pointer transition-colors"
+                title={isEn ? "Sign out" : "लॉगआउट"}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" className="hidden sm:block">
+              <Button size="sm" variant="ghost" className="text-xs text-white/80 hover:text-white">
+                {isEn ? "Login" : "लॉगिन"}
+              </Button>
+            </Link>
+          )}
+
           <LanguageModal />
 
           {/* Mobile Quick Action */}

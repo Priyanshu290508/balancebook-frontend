@@ -10,19 +10,74 @@ import {
   Search,
   Filter,
   CheckCircle2,
+  AlertTriangle,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useStore } from "@/lib/store"
 import { useTranslation } from "@/lib/i18n"
 import { formatINR } from "@/lib/calc"
+import { AuthGuard } from "@/lib/auth"
 
 export default function HistoryPage() {
+  return (
+    <AuthGuard>
+      <HistoryContent />
+    </AuthGuard>
+  )
+}
+
+function HistoryContent() {
   const { sales, purchases, deleteSale, deletePurchase } = useStore()
   const { t, isEn, formatProductName } = useTranslation()
   const [activeTab, setActiveTab] = React.useState<"sales" | "purchases">("sales")
   const [searchTerm, setSearchTerm] = React.useState("")
   const [dateFilter, setDateFilter] = React.useState("")
+  const [errorToast, setErrorToast] = React.useState<string | null>(null)
+  const [successToast, setSuccessToast] = React.useState<string | null>(null)
+
+  const handleDeleteSale = async (id: string) => {
+    if (
+      !confirm(
+        isEn
+          ? "Are you sure you want to delete this sale? Stock will be reversed automatically."
+          : "क्या आप यह बिक्री हटाना चाहते हैं? सामान का स्टॉक स्वतः वापस जुड़ जाएगा।"
+      )
+    ) return
+
+    try {
+      setErrorToast(null)
+      await deleteSale(id)
+      setSuccessToast(isEn ? "Sale deleted and stock reversed." : "बिक्री हटा दी गई और स्टॉक वापस जुड़ गया।")
+      setTimeout(() => setSuccessToast(null), 4000)
+    } catch (err: any) {
+      console.error("Delete sale error:", err)
+      setErrorToast(err.message || (isEn ? "Failed to delete sale." : "बिक्री हटाने में त्रुटि।"))
+      setTimeout(() => setErrorToast(null), 6000)
+    }
+  }
+
+  const handleDeletePurchase = async (id: string) => {
+    if (
+      !confirm(
+        isEn
+          ? "Are you sure you want to delete this purchase record? Stock will be reversed automatically."
+          : "क्या आप यह खरीद रिकॉर्ड हटाना चाहते हैं? सामान का स्टॉक स्वतः वापस कम हो जाएगा।"
+      )
+    ) return
+
+    try {
+      setErrorToast(null)
+      await deletePurchase(id)
+      setSuccessToast(isEn ? "Purchase deleted and stock reduced." : "खरीद हटा दी गई और स्टॉक घट गया।")
+      setTimeout(() => setSuccessToast(null), 4000)
+    } catch (err: any) {
+      console.error("Delete purchase error:", err)
+      setErrorToast(err.message || (isEn ? "Failed to delete purchase." : "खरीद हटाने में त्रुटि।"))
+      setTimeout(() => setErrorToast(null), 6000)
+    }
+  }
 
   // Filtered sales
   const filteredSales = React.useMemo(() => {
@@ -65,6 +120,38 @@ export default function HistoryPage() {
           </p>
         </div>
       </div>
+
+      {/* Success Toast */}
+      {successToast && (
+        <div className="mt-4 flex items-center justify-between rounded-2xl bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-800 p-4 text-sm font-bold text-emerald-800 dark:text-emerald-300 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-700 shrink-0" />
+            <span>{successToast}</span>
+          </div>
+          <button
+            onClick={() => setSuccessToast(null)}
+            className="text-emerald-800 hover:text-emerald-950 p-1 cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Error Toast Banner */}
+      {errorToast && (
+        <div className="mt-4 flex items-center justify-between rounded-2xl bg-red-100 dark:bg-red-950/80 border border-red-300 dark:border-red-800 p-4 text-sm font-bold text-red-800 dark:text-red-300 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+            <span>{errorToast}</span>
+          </div>
+          <button
+            onClick={() => setErrorToast(null)}
+            className="text-red-800 hover:text-red-950 p-1 cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">

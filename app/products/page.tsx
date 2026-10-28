@@ -27,8 +27,17 @@ import { useStore } from "@/lib/store"
 import { useTranslation } from "@/lib/i18n"
 import { calculateMargin, formatINR } from "@/lib/calc"
 import { productSchema } from "@/lib/validators"
+import { AuthGuard } from "@/lib/auth"
 
 export default function ProductsPage() {
+  return (
+    <AuthGuard>
+      <ProductsContent />
+    </AuthGuard>
+  )
+}
+
+function ProductsContent() {
   const { products, addProduct } = useStore()
   const { t, isEn, formatProductName, formatCategoryName } = useTranslation()
   const [search, setSearch] = React.useState("")

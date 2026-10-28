@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "motion/react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   Sparkles,
   Search,
@@ -31,6 +31,8 @@ import {
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 import { LanguageModal } from "@/components/navigation/language-modal"
+import { useStore, getTodayDate } from "@/lib/store"
+import { formatINR, calculateMargin } from "@/lib/calc"
 
 // ==========================================
 // Shared UI Primitives
@@ -115,164 +117,16 @@ export default function DukanKhataLandingPage() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
 
-  // Active product in live POS showcase
-  const [activeProductIndex, setActiveProductIndex] = React.useState(0)
-  const [activeNavTab, setActiveNavTab] = React.useState<"all" | "low" | "high">("all")
-  const [saleQty, setSaleQty] = React.useState(1)
-  const [saleSuccessMessage, setSaleSuccessMessage] = React.useState<string | null>(null)
-  // Nimbus Grid Console State from Reference Screenshot
-  const [activeConsoleNav, setActiveConsoleNav] = React.useState("Storage Pools")
-  const [consoleDataset, setConsoleDataset] = React.useState<"cloud" | "grocery">("cloud")
-  const [consoleToast, setConsoleToast] = React.useState<{ title: string; subtitle: string } | null>({
-    title: "Pool created",
-    subtitle: "finance-vault ready",
-  })
-  const [customPools, setCustomPools] = React.useState<
-    Array<{
-      name: string
-      region: string
-      used: string
-      policy: string
-      state: "HEALTHY" | "SYNCING" | "QUEUED" | "LOW STOCK"
-    }>
-  >([])
-  const [activeBarIndex, setActiveBarIndex] = React.useState(1)
+  // Real Supabase Store Data
+  const { products, sales, purchases, metrics, isRealtime, isLoading } = useStore()
 
-  // Products adapted based on language
-  const groceryProducts = React.useMemo(() => {
-    return [
-      {
-        id: 0,
-        name: isEn ? "Aashirvaad Whole Wheat Flour 10kg" : isHi ? "आशीर्वाद शुद्ध चक्की आटा 10kg" : "Aashirvaad Shudh Chakki Atta 10kg",
-        category: isEn ? "Staples & Flour" : isHi ? "राशन और आटा" : "Ration & Atta",
-        unit: isEn ? "packet" : isHi ? "पैकेट" : "packet",
-        stock: 42,
-        costPrice: 380,
-        sellPrice: 460,
-        lowStockThreshold: 10,
-        supplier: isEn ? "Shree Ganesh Wholesalers" : "श्री गणेश ट्रेडर्स",
-        lastUpdated: isEn ? "Today, 10:15 AM" : isHi ? "आज, 10:15 AM" : "Aaj, 10:15 AM",
-      },
-      {
-        id: 1,
-        name: isEn ? "India Gate Basmati Rice 5kg" : isHi ? "इंडिया गेट बासमती चावल 5kg" : "India Gate Basmati Chawal 5kg",
-        category: isEn ? "Staples & Grains" : isHi ? "राशन और अनाज" : "Ration & Atta",
-        unit: isEn ? "bag" : isHi ? "बोरी" : "bag",
-        stock: 18,
-        costPrice: 410,
-        sellPrice: 520,
-        lowStockThreshold: 5,
-        supplier: isEn ? "Kisan Rice Mills" : "किसान राइस मिल",
-        lastUpdated: isEn ? "Today, 9:30 AM" : isHi ? "आज, 9:30 AM" : "Aaj, 9:30 AM",
-      },
-      {
-        id: 2,
-        name: isEn ? "Fortune Mustard Oil 1L" : isHi ? "फॉर्च्यून कच्ची घानी सरसों तेल 1L" : "Fortune Kachi Ghani Mustard Oil 1L",
-        category: isEn ? "Oils & Spices" : isHi ? "तेल और मसाले" : "Tel & Masale",
-        unit: isEn ? "bottle" : isHi ? "बोतल" : "bottle",
-        stock: 4,
-        costPrice: 125,
-        sellPrice: 155,
-        lowStockThreshold: 8,
-        supplier: isEn ? "Agrawal Oil Distributors" : "अग्रवाल ऑइल डिपो",
-        lastUpdated: isEn ? "Yesterday, 6:40 PM" : isHi ? "कल, 6:40 PM" : "Kal, 6:40 PM",
-      },
-      {
-        id: 3,
-        name: isEn ? "Maggi 2-Minute Noodles (Pack of 24)" : isHi ? "मैगी 2-मिनट नूडल्स (24 का पैक)" : "Maggi 2-Minute Masala Noodles (Pack 24)",
-        category: isEn ? "Packaged Snacks" : isHi ? "स्नैक्स और नाश्ता" : "Snacks & Quick Food",
-        unit: isEn ? "carton" : isHi ? "कार्टन" : "carton",
-        stock: 14,
-        costPrice: 288,
-        sellPrice: 336,
-        lowStockThreshold: 5,
-        supplier: isEn ? "Nestle Regional Agency" : "नेस्ले सिटी एजेंसी",
-        lastUpdated: isEn ? "Yesterday, 2:10 PM" : isHi ? "कल, 2:10 PM" : "Kal, 2:10 PM",
-      },
-      {
-        id: 4,
-        name: isEn ? "Tata Salt Vacuum Evaporated 1kg" : isHi ? "टाटा नमक 1kg" : "Tata Salt Vacuum Evaporated 1kg",
-        category: isEn ? "Daily Essentials" : isHi ? "दैनिक किराना" : "Kirana Daily",
-        unit: isEn ? "packet" : isHi ? "पैकेट" : "packet",
-        stock: 65,
-        costPrice: 22,
-        sellPrice: 28,
-        lowStockThreshold: 15,
-        supplier: isEn ? "National Grocery Wholesaler" : "नेशनल होलसेलर",
-        lastUpdated: isEn ? "2 Days Ago" : isHi ? "2 दिन पहले" : "2 Din Pehle",
-      },
-      {
-        id: 5,
-        name: isEn ? "Amul Pasteurized Butter 500g" : isHi ? "अमूल मक्खन 500g" : "Amul Pasteurised Butter 500g",
-        category: isEn ? "Dairy & Cold Storage" : isHi ? "डेयरी उत्पाद" : "Dairy & Bakery",
-        unit: isEn ? "pack" : isHi ? "पैक" : "brick",
-        stock: 3,
-        costPrice: 245,
-        sellPrice: 275,
-        lowStockThreshold: 6,
-        supplier: isEn ? "Amul Fresh Depot" : "अमूल फ्रेश डिपो",
-        lastUpdated: isEn ? "Today, 8:00 AM" : isHi ? "आज, 8:00 AM" : "Aaj, 8:00 AM",
-      },
-    ]
-  }, [isEn, isHi])
-
-  const activeProduct = groceryProducts[activeProductIndex] || groceryProducts[0]
-  const marginPerUnit = activeProduct.sellPrice - activeProduct.costPrice
-  const marginPercent = ((marginPerUnit / activeProduct.costPrice) * 100).toFixed(1)
-
-  // Quick sale handler for interactive feedback
-  const handleSimulateSale = () => {
-    const totalSale = saleQty * activeProduct.sellPrice
-    const totalProfit = saleQty * marginPerUnit
-    const msg = isEn
-      ? `Sale Recorded! ₹${totalSale} Total · Net Profit: +₹${totalProfit}`
-      : isHi
-      ? `बिक्री दर्ज हो गई! ₹${totalSale} कुल राशि · मुनाफा: +₹${totalProfit}`
-      : `Bikri Record Ho Gayi! ₹${totalSale} Total · Munafa: +₹${totalProfit}`
-
-    setSaleSuccessMessage(msg)
-    setTimeout(() => {
-      setSaleSuccessMessage(null)
-    }, 3500)
-  }
-
-  // Datasets for the Nimbus Grid Console
-  const cloudStoragePools = React.useMemo(() => {
-    return [
-      { name: "finance-vault", region: "EU Central", used: "18.4 TiB", policy: "7 years", state: "HEALTHY" as const },
-      { name: "design-assets", region: "US East", used: "9.8 TiB", policy: "Versioned", state: "SYNCING" as const },
-      { name: "legal-archive", region: "EU Central", used: "42.1 TiB", policy: "Immutable", state: "HEALTHY" as const },
-      { name: "migration-lane", region: "AP South", used: "6.2 TiB", policy: "Temporary", state: "QUEUED" as const },
-      ...customPools,
-    ]
-  }, [customPools])
-
-  const groceryStoragePools = React.useMemo(() => {
-    return [
-      { name: "atta-chakki-vault", region: isEn ? "North Depot" : "उत्तर डिपो", used: "42 pkts", policy: "+21.0% Margin", state: "HEALTHY" as const },
-      { name: "basmati-rice-pool", region: isEn ? "East Silo" : "पूर्व साइलो", used: "18 bags", policy: "+26.8% Margin", state: "HEALTHY" as const },
-      { name: "mustard-oil-lane", region: isEn ? "Central Depot" : "सेंट्रल डिपो", used: "4 bottles", policy: "Reorder Limit 8", state: "SYNCING" as const },
-      { name: "amul-butter-vault", region: isEn ? "Cold Chain 01" : "कोल्ड चेन 01", used: "3 bricks", policy: "Reorder Limit 6", state: "QUEUED" as const },
-      ...customPools,
-    ]
-  }, [isEn, customPools])
-
-  const handleNewPoolClick = () => {
-    const randomId = Math.floor(Math.random() * 800 + 100)
-    const newName = consoleDataset === "cloud" ? `vault-node-${randomId}` : `inventory-pool-${randomId}`
-    const newPool = {
-      name: newName,
-      region: "AP South",
-      used: "2.4 TiB",
-      policy: "Instant Cache",
-      state: "HEALTHY" as const,
-    }
-    setCustomPools((prev) => [newPool, ...prev])
-    setConsoleToast({
-      title: "Pool created",
-      subtitle: `${newName} ready`,
-    })
-  }
+  const today = getTodayDate()
+  const todaySalesCount = sales.filter((s) => s.sold_at === today).length
+  const highMarginItems = products.filter(
+    (p) => calculateMargin(p.sell_price, p.avg_cost).marginPct >= 20
+  )
+  const lowStockItems = products.filter((p) => p.stock_qty <= p.low_stock_limit)
+  const safeStockItems = products.filter((p) => p.stock_qty > p.low_stock_limit)
 
   const navLinks = [
     { label: t("dashboard", "Dashboard"), href: "/dashboard" },
@@ -282,90 +136,55 @@ export default function DukanKhataLandingPage() {
     { label: t("history", "History"), href: "/history" },
   ]
 
+  // Dynamic Triage data computed directly from Supabase products and sales
   const triageData = React.useMemo(() => {
-    if (isEn) {
-      return [
-        {
-          tier: "High Profit Margin (≥20%)",
-          count: "18 items",
-          color: "#10b981",
-          items: ["Tata Salt (+27.3% margin)", "Basmati Rice (+26.8% margin)", "Wheat Flour 10kg (+21.0% margin)"],
-        },
-        {
-          tier: "Low Stock Alert",
-          count: "3 items",
-          color: "#ef4444",
-          items: ["Mustard Oil 1L (4 left — reorder limit 8)", "Butter 500g (3 left — reorder limit 6)"],
-        },
-        {
-          tier: "Today's Total Sales",
-          count: "₹24,850",
-          color: "#00d2ff",
-          items: ["38 receipts issued", "Average basket ₹654", "Peak hours: 6:00 PM – 8:30 PM"],
-        },
-        {
-          tier: "Safe Inventory",
-          count: "64 items",
-          color: "#a3a3a3",
-          items: ["Table Salt (65 pkts)", "Refined Sugar (120 kg)", "Yellow Lentils (80 kg)"],
-        },
-      ]
-    }
-    if (isHi) {
-      return [
-        {
-          tier: "अधिक मुनाफा मार्जिन (≥20%)",
-          count: "18 सामान",
-          color: "#10b981",
-          items: ["टाटा नमक (+27.3% मार्जिन)", "बासमती चावल (+26.8% मार्जिन)", "आशीर्वाद आटा (+21.0% मार्जिन)"],
-        },
-        {
-          tier: "कम स्टॉक चेतावनी",
-          count: "3 सामान",
-          color: "#ef4444",
-          items: ["फॉर्च्यून सरसों तेल (4 बची हैं — सीमा 8)", "अमूल मक्खन (3 बचे हैं — सीमा 6)"],
-        },
-        {
-          tier: "आज की कुल बिक्री",
-          count: "₹24,850",
-          color: "#00d2ff",
-          items: ["38 बिल दर्ज", "औसत ग्राहक बिल ₹654", "व्यस्त समय: शाम 6:00 – 8:30"],
-        },
-        {
-          tier: "पर्याप्त सुरक्षित स्टॉक",
-          count: "64 सामान",
-          color: "#a3a3a3",
-          items: ["टाटा नमक (65 पैकेट)", "चीनी (120 kg)", "चना दाल (80 kg)"],
-        },
-      ]
-    }
     return [
       {
-        tier: "High Profit Margin (≥20%)",
-        count: "18 items",
+        tier: isEn ? "High Profit Margin (≥20%)" : "अधिक मुनाफा मार्जिन (≥20%)",
+        count: `${highMarginItems.length} ${isEn ? "items" : "सामान"}`,
         color: "#10b981",
-        items: ["Tata Salt (+27.3% margin)", "Basmati Chawal (+26.8% margin)", "Atta 10kg (+21.0% margin)"],
+        items:
+          highMarginItems.length > 0
+            ? highMarginItems.slice(0, 3).map(
+                (p) =>
+                  `${p.name} (+${calculateMargin(p.sell_price, p.avg_cost).marginPct}% margin)`
+              )
+            : [isEn ? "No items ≥20% margin yet" : "अभी 20%+ मार्जिन वाला सामान नहीं है"],
       },
       {
-        tier: "Kam Stock Alert",
-        count: "3 items",
+        tier: isEn ? "Low Stock Alert" : "कम स्टॉक चेतावनी",
+        count: `${lowStockItems.length} ${isEn ? "items" : "सामान"}`,
         color: "#ef4444",
-        items: ["Fortune Mustard Oil (4 bachi hai — limit 8)", "Amul Butter (3 bachi hai — limit 6)"],
+        items:
+          lowStockItems.length > 0
+            ? lowStockItems.slice(0, 3).map(
+                (p) =>
+                  `${p.name} (${p.stock_qty} ${p.unit} left — alert at ${p.low_stock_limit})`
+              )
+            : [isEn ? "All items have sufficient stock" : "सभी सामान पर्याप्त स्टॉक में हैं"],
       },
       {
-        tier: "Aaj Ki Bikri (Sales)",
-        count: "₹24,850",
+        tier: isEn ? "Today's Total Sales" : "आज की कुल बिक्री",
+        count: formatINR(metrics.todaySales),
         color: "#00d2ff",
-        items: ["38 bills generated", "Avg basket ₹654", "Peak hour: 6:00 PM – 8:30 PM"],
+        items: [
+          `${todaySalesCount} ${isEn ? "receipts logged today" : "बिल आज दर्ज किए गए"}`,
+          `${isEn ? "Net profit today" : "आज का कुल मुनाफा"}: ${formatINR(metrics.todayProfit)}`,
+        ],
       },
       {
-        tier: "Surplus Safe Stock",
-        count: "64 items",
+        tier: isEn ? "Safe Inventory" : "सुरक्षित स्टॉक",
+        count: `${safeStockItems.length} ${isEn ? "items" : "सामान"}`,
         color: "#a3a3a3",
-        items: ["Tata Salt (65 pkts)", "Sugar M-30 (120 kg)", "Chana Dal (80 kg)"],
+        items:
+          safeStockItems.length > 0
+            ? safeStockItems.slice(0, 3).map(
+                (p) => `${p.name} (${p.stock_qty} ${p.unit})`
+              )
+            : [isEn ? "No products in inventory yet" : "इन्वेंट्री में अभी सामान नहीं है"],
       },
     ]
-  }, [isEn, isHi])
+  }, [highMarginItems, lowStockItems, safeStockItems, metrics, todaySalesCount, isEn])
 
   const storePartners = React.useMemo(() => {
     return [
@@ -628,7 +447,7 @@ export default function DukanKhataLandingPage() {
             />
           </motion.div>
 
-          {/* Quick Metrics Trust Bar */}
+          {/* Quick Metrics Trust Bar - 100% Real Supabase Data */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -636,20 +455,36 @@ export default function DukanKhataLandingPage() {
             className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 border-t border-white/10 w-full max-w-3xl text-left"
           >
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">₹0</div>
-              <div className="text-xs text-white/50 mt-0.5">{t("metric_free", "100% Free for single shop")}</div>
+              <div className="text-2xl font-bold text-white tracking-tight">
+                {metrics.totalProducts}
+              </div>
+              <div className="text-xs text-white/50 mt-0.5">
+                {isEn ? "Products in Database" : "डेटाबेस में कुल सामान"}
+              </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-emerald-400 tracking-tight">100%</div>
-              <div className="text-xs text-white/50 mt-0.5">{t("metric_margin", "Exact margin calculation")}</div>
+              <div className="text-2xl font-bold text-emerald-400 tracking-tight">
+                {formatINR(metrics.todaySales)}
+              </div>
+              <div className="text-xs text-white/50 mt-0.5">
+                {isEn ? "Today's Total Sales" : "आज की कुल बिक्री"}
+              </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-cyan-400 tracking-tight">{isEn ? "Zero" : "ज़ीरो"}</div>
-              <div className="text-xs text-white/50 mt-0.5">{t("metric_zero_neg", "Zero negative stock guarantee")}</div>
+              <div className="text-2xl font-bold text-cyan-400 tracking-tight">
+                {formatINR(metrics.todayProfit)}
+              </div>
+              <div className="text-xs text-white/50 mt-0.5">
+                {isEn ? "Today's Net Profit" : "आज का कुल मुनाफा"}
+              </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">20+</div>
-              <div className="text-xs text-white/50 mt-0.5">{t("metric_langs", "Languages supported")}</div>
+              <div className="text-2xl font-bold text-amber-400 tracking-tight">
+                {metrics.lowStockCount}
+              </div>
+              <div className="text-xs text-white/50 mt-0.5">
+                {isEn ? "Low Stock Alerts" : "कम स्टॉक चेतावनियां"}
+              </div>
             </div>
           </motion.div>
         </section>
@@ -694,290 +529,160 @@ export default function DukanKhataLandingPage() {
         </motion.div>
 
         {/* ========================================================= */}
-        {/* Section 4 — Nimbus Grid Console Showcase */}
+        {/* Section 4 — Live Supabase Inventory & Margin Board */}
         {/* ========================================================= */}
         <section className="max-w-6xl mx-auto px-6 py-14 md:py-20">
-          {/* Top Split Section: Left bold headline, Right paragraph + stacked interactive bars */}
-          <div className="grid md:grid-cols-12 gap-8 items-end mb-10">
-            {/* Left Column: Big Bold Statement */}
-            <div className="md:col-span-7">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-[1.12]">
-                {isEn ? (
-                  <>
-                    The biggest forward leap in <br className="hidden sm:inline" />
-                    business cloud storage <br className="hidden sm:inline" />
-                    operations.
-                  </>
-                ) : isHi ? (
-                  <>
-                    व्यापारिक क्लाउड स्टोरेज और <br className="hidden sm:inline" />
-                    दुकान संचालन में <br className="hidden sm:inline" />
-                    सबसे बड़ा क्रांतिकारी कदम।
-                  </>
-                ) : (
-                  <>
-                    Business cloud storage aur <br className="hidden sm:inline" />
-                    inventory operations me <br className="hidden sm:inline" />
-                    sabse bada forward leap.
-                  </>
-                )}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs font-medium mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>
+                  {isRealtime
+                    ? isEn
+                      ? "Supabase Live Connected"
+                      : "सुपाबेस लाइव कनेक्टेड"
+                    : isEn
+                    ? "Database Synced"
+                    : "डेटाबेस सिंक"}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">
+                {isEn ? "Live Store Inventory & Margins" : "लाइव दुकान इन्वेंट्री और मार्जिन"}
               </h2>
-            </div>
-
-            {/* Right Column: Paragraph + Stacked Interactive Bar Tabs with Cursor */}
-            <div className="md:col-span-5 flex flex-col justify-between">
-              <p className="text-sm text-white/60 leading-relaxed">
+              <p className="mt-1 text-sm text-white/60">
                 {isEn
-                  ? "A single control plane for provisioning storage pools, reviewing policy, watching growth, and shipping audit-ready reports without asking teams to change how they work."
-                  : isHi
-                  ? "स्टोरेज पूल बनाने, पॉलिसी देखने, विकास ट्रैक करने और बिना काम के तरीके बदले ऑडिट-रेडी रिपोर्ट तैयार करने का एकमात्र संपूर्ण कंट्रोल प्लेन।"
-                  : "Storage pools manage karne, policy review, growth track aur audit-ready reports ship karne ka single control plane bina working style badle."}
+                  ? "Realtime product stock, weighted average cost, and live profit margins loaded from Supabase."
+                  : "सुपाबेस से लोड किया गया वास्तविक स्टॉक, वेटेड औसत लागत और लाइव मुनाफा मार्जिन।"}
               </p>
+            </div>
 
-              {/* Stacked Interactive Horizontal Bars with Mouse Cursor indicator */}
-              <div className="mt-5 space-y-2 relative">
-                {[
-                  { label: isEn ? "Autonomous Balancing" : "ऑटोनॉमस बैलेंसिंग", active: activeBarIndex === 0 },
-                  { label: isEn ? "Encrypted Vault Sync" : "एन्क्रिप्टेड सिंक", active: activeBarIndex === 1 },
-                  { label: isEn ? "Realtime Audit Stream" : "रियल-टाइम ऑडिट स्ट्रीम", active: activeBarIndex === 2 },
-                ].map((bar, idx) => (
-                  <div
-                    key={bar.label}
-                    onClick={() => setActiveBarIndex(idx)}
-                    className={`h-9 px-4 rounded-md flex items-center justify-between text-xs cursor-pointer transition-all border ${
-                      activeBarIndex === idx
-                        ? "bg-white/[0.08] border-white/20 text-white font-medium shadow-sm"
-                        : "bg-white/[0.02] border-white/5 text-white/40 hover:bg-white/[0.04] hover:text-white/70"
-                    }`}
-                  >
-                    <span>{bar.label}</span>
-                    <span className="text-[10px] font-mono text-white/30">0{idx + 1}</span>
-                  </div>
-                ))}
+            <div className="flex items-center gap-3">
+              <Link
+                href="/products"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-xs font-semibold text-white transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{isEn ? "Manage Products" : "सामान प्रबंधित करें"}</span>
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-black hover:bg-white/90 text-xs font-semibold transition-all shadow-lg shadow-white/10"
+              >
+                <span>{isEn ? "Full Dashboard" : "पूरा डैशबोर्ड"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
 
-                {/* Floating Cursor Pointer Icon matching screenshot */}
-                <div
-                  className="absolute right-8 pointer-events-none transition-all duration-300 transform -translate-y-1/2 z-10"
-                  style={{ top: `${activeBarIndex * 44 + 20}px` }}
+          {/* Real Supabase Table Container */}
+          <div className="rounded-xl overflow-hidden border border-white/10 bg-[#0c0f12] shadow-2xl">
+            {/* Table Window Topbar */}
+            <div className="h-10 px-4 border-b border-white/10 bg-[#090b0e] flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-mono text-white/50">
+                <Store className="w-3.5 h-3.5 text-emerald-400" />
+                <span>public.products &bull; supabase</span>
+              </div>
+              <div className="text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>
+                  {products.length} {isEn ? "Records in Database" : "रिकॉर्ड डेटाबेस में"}
+                </span>
+              </div>
+            </div>
+
+            {/* Table Body */}
+            {products.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <Package className="w-10 h-10 text-white/30 mb-3" />
+                <h3 className="text-base font-semibold text-white">
+                  {isEn ? "No products in Supabase yet" : "सुपाबेस में अभी कोई सामान नहीं है"}
+                </h3>
+                <p className="text-xs text-white/50 mt-1 max-w-sm">
+                  {isEn
+                    ? "Add your products with opening stock and cost price to see live automatic margins and inventory tracking."
+                    : "लाइव स्वचालित मार्जिन और इन्वेंट्री ट्रैकिंग देखने के लिए प्रारंभिक स्टॉक और लागत मूल्य के साथ अपने सामान जोड़ें।"}
+                </p>
+                <Link
+                  href="/products"
+                  className="mt-4 px-4 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs transition-colors"
                 >
-                  <svg
-                    className="w-5 h-5 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] filter"
-                    viewBox="0 0 24 24"
-                    fill="white"
-                    stroke="black"
-                    strokeWidth="1.5"
-                  >
-                    <path d="M4 3l7.5 17 2.5-6.5L20 11 4 3z" />
-                  </svg>
-                </div>
+                  {isEn ? "Add First Product" : "पहला सामान जोड़ें"}
+                </Link>
               </div>
-            </div>
-          </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[10px] font-mono tracking-wider uppercase text-white/40 bg-white/[0.01]">
+                      <th className="py-3 px-4 font-medium">{isEn ? "PRODUCT NAME" : "सामान का नाम"}</th>
+                      <th className="py-3 px-4 font-medium">{isEn ? "CATEGORY" : "श्रेणी"}</th>
+                      <th className="py-3 px-4 font-medium text-right">{isEn ? "STOCK" : "स्टॉक"}</th>
+                      <th className="py-3 px-4 font-medium text-right">{isEn ? "AVG COST" : "औसत लागत"}</th>
+                      <th className="py-3 px-4 font-medium text-right">{isEn ? "SELLING PRICE" : "बिक्री मूल्य"}</th>
+                      <th className="py-3 px-4 font-medium text-right">{isEn ? "MARGIN" : "मार्जिन"}</th>
+                      <th className="py-3 px-4 font-medium text-center">{isEn ? "STATUS" : "स्थिति"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs font-mono">
+                    {products.slice(0, 8).map((p) => {
+                      const { marginPct, badgeColor } = calculateMargin(p.sell_price, p.avg_cost)
+                      const isLowStock = p.stock_qty <= p.low_stock_limit
 
-          {/* Micro Eyebrow Badge right above the console window */}
-          <div className="flex items-center justify-between mb-3 px-1">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded border border-white/10 bg-[#0e1217] text-[11px] font-mono text-white/60">
-              <span className="text-white/40">0 . 2</span>
-              <span className="w-1 h-1 rounded-full bg-cyan-400" />
-              <span className="tracking-widest uppercase text-white/80">NIMBUS GRID WEB CONSOLE</span>
-            </div>
-
-            {/* Toggle between Nimbus Cloud Storage Pools and BalanceBook Retail Pools */}
-            <div className="flex items-center gap-1.5 p-0.5 rounded-lg border border-white/10 bg-black/40 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setConsoleDataset("cloud")}
-                className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-                  consoleDataset === "cloud"
-                    ? "bg-white/15 text-white font-medium"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                {isEn ? "Cloud Storage Pools" : "क्लाउड स्टोरेज पूल"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConsoleDataset("grocery")}
-                className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-                  consoleDataset === "grocery"
-                    ? "bg-white/15 text-white font-medium"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                {isEn ? "BalanceBook Retail Pools" : "बैलेंसबुक रिटेल पूल"}
-              </button>
-            </div>
-          </div>
-
-          {/* Console Window Container */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="relative rounded-xl overflow-hidden border border-white/10 bg-[#0c0f12] shadow-2xl"
-          >
-            {/* Console Top Window Header */}
-            <div className="h-9 px-4 border-b border-white/10 bg-[#090b0e] flex items-center justify-between">
-              {/* Window dots */}
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
-                <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
-                <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
-              </div>
-              <div className="text-[11px] font-mono text-white/40 tracking-wider">
-                console.balancebook.io &bull; balancebook-runtime
-              </div>
-              <div className="w-10" />
-            </div>
-
-            {/* Console Body: Left Sidebar + Right Main Area */}
-            <div className="grid grid-cols-12 min-h-[460px]">
-              {/* Left Sidebar */}
-              <div className="col-span-12 md:col-span-3 border-b md:border-b-0 md:border-r border-white/10 bg-[#090c0f] p-4 flex flex-col justify-between">
-                <div>
-                  <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider px-2 mb-3">
-                    Client Vault
-                  </div>
-
-                  <nav className="space-y-1">
-                    {[
-                      "Workspaces",
-                      "Storage Pools",
-                      "Retention",
-                      "Access",
-                      "Transfers",
-                      "Reports",
-                    ].map((item) => {
-                      const isSelected = activeConsoleNav === item
                       return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => {
-                            setActiveConsoleNav(item)
-                            setConsoleToast({
-                              title: `${item} active`,
-                              subtitle: `Viewing ${item.toLowerCase()} registry`,
-                            })
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? "bg-[#18232c] text-white font-medium border border-teal-500/20"
-                              : "text-white/50 hover:bg-white/[0.03] hover:text-white/80"
-                          }`}
-                        >
-                          <span>{item}</span>
-                        </button>
+                        <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-4 font-sans font-medium text-white">
+                            {p.name}
+                          </td>
+                          <td className="py-3 px-4 text-white/60 font-sans">
+                            {p.category}
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-white">
+                            {p.stock_qty} <span className="text-white/40 text-[11px]">{p.unit}</span>
+                          </td>
+                          <td className="py-3 px-4 text-right text-white/70">
+                            {formatINR(p.avg_cost)}
+                          </td>
+                          <td className="py-3 px-4 text-right font-semibold text-white">
+                            {formatINR(p.sell_price)}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span
+                              className={`font-semibold ${
+                                badgeColor === "green"
+                                  ? "text-emerald-400"
+                                  : badgeColor === "amber"
+                                  ? "text-amber-400"
+                                  : "text-rose-400"
+                              }`}
+                            >
+                              +{marginPct}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${
+                                isLowStock
+                                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                              }`}
+                            >
+                              {isLowStock
+                                ? isEn
+                                  ? "LOW STOCK"
+                                  : "कम स्टॉक"
+                                : isEn
+                                ? "HEALTHY"
+                                : "सुरक्षित"}
+                            </span>
+                          </td>
+                        </tr>
                       )
                     })}
-                  </nav>
-                </div>
-
-                <div className="pt-4 border-t border-white/5 text-[10px] text-white/30 font-mono flex items-center justify-between">
-                  <span>REGION: AP-SOUTH-1</span>
-                  <span className="text-emerald-400 font-semibold">SYNCED</span>
-                </div>
+                  </tbody>
+                </table>
               </div>
-
-              {/* Main Content Area */}
-              <div className="col-span-12 md:col-span-9 p-6 sm:p-8 flex flex-col justify-between relative bg-[#0c0f12]">
-                <div>
-                  {/* Heading & New Pool Button */}
-                  <div className="flex items-center justify-between pb-6">
-                    <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                      {activeConsoleNav}
-                    </h3>
-
-                    <button
-                      type="button"
-                      onClick={handleNewPoolClick}
-                      className="px-3.5 py-1.5 rounded border border-white/20 bg-transparent hover:bg-white/5 text-[11px] font-mono tracking-wider uppercase text-white/90 hover:text-white transition-all cursor-pointer active:scale-95"
-                    >
-                      NEW POOL
-                    </button>
-                  </div>
-
-                  {/* Data Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-white/10 text-[10px] font-mono tracking-wider uppercase text-white/40">
-                          <th className="pb-3 font-medium">NAME</th>
-                          <th className="pb-3 font-medium">REGION</th>
-                          <th className="pb-3 font-medium">USED</th>
-                          <th className="pb-3 font-medium">POLICY</th>
-                          <th className="pb-3 font-medium text-right sm:text-left">STATE</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5 text-xs font-mono">
-                        {(consoleDataset === "cloud" ? cloudStoragePools : groceryStoragePools).map(
-                          (row, idx) => (
-                            <tr
-                              key={row.name + idx}
-                              onClick={() => {
-                                setConsoleToast({
-                                  title: "Pool created",
-                                  subtitle: `${row.name} ready`,
-                                })
-                              }}
-                              className="group hover:bg-white/[0.02] cursor-pointer transition-colors"
-                            >
-                              <td className="py-3.5 text-white/90 font-medium group-hover:text-white">
-                                {row.name}
-                              </td>
-                              <td className="py-3.5 text-white/60">
-                                {row.region}
-                              </td>
-                              <td className="py-3.5 text-white/70">
-                                {row.used}
-                              </td>
-                              <td className="py-3.5 text-white/60">
-                                {row.policy}
-                              </td>
-                              <td className="py-3.5 text-right sm:text-left">
-                                <span
-                                  className={`text-[11px] font-bold tracking-wide ${
-                                    row.state === "HEALTHY"
-                                      ? "text-[#10b981]"
-                                      : row.state === "SYNCING"
-                                      ? "text-[#06b6d4]"
-                                      : "text-[#f59e0b]"
-                                  }`}
-                                >
-                                  {row.state}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Floating Bottom-Right Toast Notification (matching screenshot) */}
-                <AnimatePresence>
-                  {consoleToast && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="absolute bottom-6 right-6 p-4 rounded-lg bg-[#0e2229] border border-teal-500/40 shadow-xl max-w-xs cursor-pointer z-10"
-                      onClick={() => setConsoleToast(null)}
-                    >
-                      <div className="text-xs text-white/90 font-medium">
-                        {consoleToast.title}
-                      </div>
-                      <div className="text-xs text-teal-300 font-semibold mt-0.5">
-                        {consoleToast.subtitle}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </motion.div>
+            )}
+          </div>
         </section>
 
         {/* ========================================================= */}
@@ -1034,7 +739,7 @@ export default function DukanKhataLandingPage() {
             >
               <div className="flex items-center justify-between text-xs font-medium text-white/60 mb-5 px-1 border-b border-white/10 pb-3">
                 <span className="font-semibold text-white">{t("triage_summary_title", "Today's Live Account Summary")}</span>
-                <span className="text-emerald-400 font-mono">42 {t("triage_recorded", "Transactions Recorded")}</span>
+                <span className="text-emerald-400 font-mono">{todaySalesCount} {t("triage_recorded", "Transactions Recorded")}</span>
               </div>
               <div className="space-y-3.5">
                 {triageData.map((group) => (

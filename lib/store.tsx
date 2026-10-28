@@ -5,169 +5,19 @@ import {
   ProductItem,
   PurchaseRecord,
   SaleRecord,
-  calculateWeightedAverage,
-  calculateSaleProfit,
   formatItemNameByLang,
   formatCategoryByLang,
 } from "./calc"
 import { supabase, isSupabaseConfigured } from "./supabase/client"
+import { useAuth } from "./auth"
 
-// Fallback seed items for initial render when Supabase keys are not yet added
-const INITIAL_PRODUCTS: ProductItem[] = [
-  {
-    id: "a0000000-0000-0000-0000-000000000001",
-    name: "Basmati Rice",
-    category: "Grains",
-    unit: "kg",
-    sell_price: 60.0,
-    avg_cost: 48.0,
-    stock_qty: 45.0,
-    low_stock_limit: 10.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000002",
-    name: "Arhar Dal (Toor Dal)",
-    category: "Pulses",
-    unit: "kg",
-    sell_price: 140.0,
-    avg_cost: 115.0,
-    stock_qty: 28.0,
-    low_stock_limit: 8.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000003",
-    name: "Fortune Mustard Oil",
-    category: "Cooking Oil",
-    unit: "L",
-    sell_price: 165.0,
-    avg_cost: 142.0,
-    stock_qty: 4.0, // Low stock alert
-    low_stock_limit: 6.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000004",
-    name: "Tata Salt 1kg",
-    category: "Spices & Salt",
-    unit: "packet",
-    sell_price: 28.0,
-    avg_cost: 22.5,
-    stock_qty: 50.0,
-    low_stock_limit: 15.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000005",
-    name: "Aashirvaad Atta 5kg",
-    category: "Grains",
-    unit: "packet",
-    sell_price: 230.0,
-    avg_cost: 195.0,
-    stock_qty: 18.0,
-    low_stock_limit: 5.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000006",
-    name: "Amul Taaza Milk 500ml",
-    category: "Dairy",
-    unit: "packet",
-    sell_price: 27.0,
-    avg_cost: 24.5,
-    stock_qty: 12.0,
-    low_stock_limit: 5.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000007",
-    name: "MDH Turmeric Powder 100g",
-    category: "Spices",
-    unit: "packet",
-    sell_price: 38.0,
-    avg_cost: 29.0,
-    stock_qty: 22.0,
-    low_stock_limit: 5.0,
-    is_active: true,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000008",
-    name: "Sugar Regular",
-    category: "Grocery",
-    unit: "kg",
-    sell_price: 44.0,
-    avg_cost: 37.0,
-    stock_qty: 85.0,
-    low_stock_limit: 20.0,
-    is_active: true,
-  },
-]
-
-const INITIAL_DATE = new Date().toISOString().split("T")[0]
-
-const INITIAL_PURCHASES: PurchaseRecord[] = [
-  {
-    id: "b0000000-0000-0000-0000-000000000001",
-    product_id: "a0000000-0000-0000-0000-000000000001",
-    product_name: "Basmati Rice",
-    qty: 50,
-    cost_per_unit: 48,
-    total_cost: 2400,
-    supplier: "Kisan Mandi",
-    purchased_at: INITIAL_DATE,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "b0000000-0000-0000-0000-000000000002",
-    product_id: "a0000000-0000-0000-0000-000000000002",
-    product_name: "Arhar Dal (Toor Dal)",
-    qty: 30,
-    cost_per_unit: 115,
-    total_cost: 3450,
-    supplier: "Shree Ganesh Traders",
-    purchased_at: INITIAL_DATE,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "b0000000-0000-0000-0000-000000000003",
-    product_id: "a0000000-0000-0000-0000-000000000003",
-    product_name: "Fortune Mustard Oil",
-    qty: 10,
-    cost_per_unit: 142,
-    total_cost: 1420,
-    supplier: "Adani Wilmar Dist.",
-    purchased_at: INITIAL_DATE,
-    created_at: new Date().toISOString(),
-  },
-]
-
-const INITIAL_SALES: SaleRecord[] = [
-  {
-    id: "c0000000-0000-0000-0000-000000000001",
-    product_id: "a0000000-0000-0000-0000-000000000001",
-    product_name: "Basmati Rice",
-    qty: 5,
-    sell_per_unit: 60,
-    cost_at_sale: 48,
-    total_sale: 300,
-    profit: 60,
-    sold_at: INITIAL_DATE,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "c0000000-0000-0000-0000-000000000002",
-    product_id: "a0000000-0000-0000-0000-000000000002",
-    product_name: "Arhar Dal (Toor Dal)",
-    qty: 2,
-    sell_per_unit: 140,
-    cost_at_sale: 115,
-    total_sale: 280,
-    profit: 50,
-    sold_at: INITIAL_DATE,
-    created_at: new Date().toISOString(),
-  },
-]
+export function getTodayDate(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 interface StoreContextType {
   products: ProductItem[]
@@ -192,9 +42,11 @@ interface StoreContextType {
   }) => Promise<SaleRecord>
   deleteSale: (id: string) => Promise<void>
   deletePurchase: (id: string) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
   resetToDefault: () => void
   refreshData: () => Promise<void>
   metrics: {
+    totalProducts: number
     todaySales: number
     todayProfit: number
     monthProfit: number
@@ -208,20 +60,23 @@ interface StoreContextType {
 const StoreContext = React.createContext<StoreContextType | null>(null)
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = React.useState<ProductItem[]>(INITIAL_PRODUCTS)
-  const [purchases, setPurchases] = React.useState<PurchaseRecord[]>(INITIAL_PURCHASES)
-  const [sales, setSales] = React.useState<SaleRecord[]>(INITIAL_SALES)
+  const { user } = useAuth()
+  const [products, setProducts] = React.useState<ProductItem[]>([])
+  const [purchases, setPurchases] = React.useState<PurchaseRecord[]>([])
+  const [sales, setSales] = React.useState<SaleRecord[]>([])
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [isRealtime, setIsRealtime] = React.useState<boolean>(false)
-  const [todayDate, setTodayDate] = React.useState(INITIAL_DATE)
 
-  React.useEffect(() => {
-    setTodayDate(new Date().toISOString().split("T")[0])
-  }, [])
-
-  // LOAD DATA DIRECTLY FROM SUPABASE POSTGRES
+  // LOAD DATA DIRECTLY FROM SUPABASE POSTGRES FOR THE CURRENT USER
   const loadData = React.useCallback(async () => {
-    if (!isSupabaseConfigured || !supabase) return
+    if (!isSupabaseConfigured || !supabase || !user) {
+      if (!user) {
+        setProducts([])
+        setPurchases([])
+        setSales([])
+      }
+      return
+    }
 
     try {
       setIsLoading(true)
@@ -241,7 +96,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           .order("sold_at", { ascending: false }),
       ])
 
-      if (prodRes.data && prodRes.data.length > 0) {
+      if (prodRes.error) {
+        console.error("Supabase products fetch error:", prodRes.error)
+      } else if (prodRes.data) {
         setProducts(
           prodRes.data.map((p: any) => ({
             id: p.id,
@@ -257,36 +114,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
       }
 
-      if (purRes.data) {
+      if (purRes.error) {
+        console.error("Supabase purchases fetch error:", purRes.error)
+      } else if (purRes.data) {
         setPurchases(
-          purRes.data.map((p: any) => ({
-            id: p.id,
-            product_id: p.product_id,
-            product_name: formatItemNameByLang(p.product_name || "सामान", "en"),
-            supplier: p.supplier || undefined,
-            qty: Number(p.qty),
-            cost_per_unit: Number(p.cost_per_unit),
-            total_cost: Number(p.total_cost),
-            purchased_at: p.purchased_at,
-            created_at: p.created_at,
-          }))
+          purRes.data.map((p: any) => {
+            const matchedProduct = prodRes.data?.find((x: any) => x.id === p.product_id)
+            const resolvedName = p.product_name || matchedProduct?.name || "सामान"
+            return {
+              id: p.id,
+              product_id: p.product_id,
+              product_name: formatItemNameByLang(resolvedName, "en"),
+              supplier: p.supplier || undefined,
+              qty: Number(p.qty),
+              cost_per_unit: Number(p.cost_per_unit),
+              total_cost: Number(p.total_cost ?? (Number(p.qty) * Number(p.cost_per_unit))),
+              purchased_at: p.purchased_at,
+              created_at: p.created_at,
+            }
+          })
         )
       }
 
-      if (saleRes.data) {
+      if (saleRes.error) {
+        console.error("Supabase sales fetch error:", saleRes.error)
+      } else if (saleRes.data) {
         setSales(
-          saleRes.data.map((s: any) => ({
-            id: s.id,
-            product_id: s.product_id,
-            product_name: formatItemNameByLang(s.product_name || "सामान", "en"),
-            qty: Number(s.qty),
-            sell_per_unit: Number(s.sell_per_unit),
-            cost_at_sale: Number(s.cost_at_sale),
-            total_sale: Number(s.total_sale),
-            profit: Number(s.profit),
-            sold_at: s.sold_at,
-            created_at: s.created_at,
-          }))
+          saleRes.data.map((s: any) => {
+            const matchedProduct = prodRes.data?.find((x: any) => x.id === s.product_id)
+            const resolvedName = s.product_name || matchedProduct?.name || "सामान"
+            return {
+              id: s.id,
+              product_id: s.product_id,
+              product_name: formatItemNameByLang(resolvedName, "en"),
+              qty: Number(s.qty),
+              sell_per_unit: Number(s.sell_per_unit),
+              cost_at_sale: Number(s.cost_at_sale),
+              total_sale: Number(s.total_sale),
+              profit: Number(s.profit),
+              sold_at: s.sold_at,
+              created_at: s.created_at,
+            }
+          })
         )
       }
     } catch (err) {
@@ -294,56 +163,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user])
 
   // SUPABASE REALTIME SUBSCRIPTION (Instant sync without page reload)
   React.useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return
+    if (!isSupabaseConfigured || !supabase || !user) return
 
     loadData()
 
     const channel = supabase
-      .channel("balancebook-realtime-sync")
+      .channel("retail-store-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "products" },
-        () => loadData()
+        () => {
+          loadData()
+        }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "purchases" },
-        () => loadData()
+        () => {
+          loadData()
+        }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "sales" },
-        () => loadData()
+        () => {
+          loadData()
+        }
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setIsRealtime(true)
-        }
+        setIsRealtime(status === "SUBSCRIBED")
       })
 
     return () => {
       supabase?.removeChannel(channel)
     }
-  }, [loadData])
+  }, [loadData, user])
 
-  // ADD PRODUCT (Direct Supabase Insert)
+  // CREATE PRODUCT
   const addProduct = React.useCallback(
     async (data: Omit<ProductItem, "id" | "is_active">): Promise<ProductItem> => {
       if (!isSupabaseConfigured || !supabase) {
-        const localProduct: ProductItem = {
-          ...data,
-          id: `prod_${Date.now()}`,
-          is_active: true,
-        }
-        setProducts((prev) => [localProduct, ...prev])
-        return localProduct
+        throw new Error("Supabase is not configured.")
+      }
+      if (!user) {
+        throw new Error("कृपया पहले लॉगिन करें (Please log in to add products)")
       }
 
-      const { data: userAuth } = await supabase.auth.getUser()
       const { data: inserted, error } = await supabase
         .from("products")
         .insert([
@@ -356,14 +225,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             stock_qty: Number(data.stock_qty) || 0,
             low_stock_limit: Number(data.low_stock_limit) || 5,
             is_active: true,
-            user_id: userAuth?.user?.id || null,
+            user_id: user.id,
           },
         ])
         .select()
         .single()
 
       if (error) {
-        throw new Error(error.message)
+        throw new Error(error.message || "Failed to create product in Supabase")
       }
 
       const formatted: ProductItem = {
@@ -379,9 +248,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProducts((prev) => [formatted, ...prev])
+      await loadData()
       return formatted
     },
-    []
+    [user, loadData]
   )
 
   // ADD PURCHASE (Database Trigger 1 updates stock & weighted avg in Supabase)
@@ -393,58 +263,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       supplier?: string
       purchased_at: string
     }): Promise<PurchaseRecord> => {
+      if (!isSupabaseConfigured || !supabase) {
+        throw new Error("Supabase is not configured.")
+      }
+      if (!user) {
+        throw new Error("कृपया पहले लॉगिन करें (Please log in to record purchases)")
+      }
+
       const product = products.find((p) => p.id === data.product_id)
       if (!product) throw new Error("सामान नहीं मिला (Product not found)")
 
-      if (!isSupabaseConfigured || !supabase) {
-        const { newStock, newAvgCost } = calculateWeightedAverage(
-          product.stock_qty,
-          product.avg_cost,
-          data.qty,
-          data.cost_per_unit
-        )
-        setProducts((prev) =>
-          prev.map((p) =>
-            p.id === data.product_id
-              ? { ...p, stock_qty: newStock, avg_cost: newAvgCost }
-              : p
-          )
-        )
-        const total_cost = Math.round(data.qty * data.cost_per_unit * 100) / 100
-        const localPurchase: PurchaseRecord = {
-          id: `pur_${Date.now()}`,
-          product_id: data.product_id,
-          product_name: product.name,
-          supplier: data.supplier,
-          qty: data.qty,
-          cost_per_unit: data.cost_per_unit,
-          total_cost,
-          purchased_at: data.purchased_at,
-          created_at: new Date().toISOString(),
-        }
-        setPurchases((prev) => [localPurchase, ...prev])
-        return localPurchase
-      }
-
-      const { data: userAuth } = await supabase.auth.getUser()
       const { data: inserted, error } = await supabase
         .from("purchases")
         .insert([
           {
             product_id: data.product_id,
-            product_name: product.name,
             qty: data.qty,
             cost_per_unit: data.cost_per_unit,
             supplier: data.supplier || null,
             purchased_at: data.purchased_at,
-            user_id: userAuth?.user?.id || null,
+            user_id: user.id,
           },
         ])
         .select()
         .single()
 
       if (error) {
-        throw new Error(error.message)
+        throw new Error(error.message || "Failed to record purchase in Supabase")
       }
 
       const formatted: PurchaseRecord = {
@@ -463,10 +308,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await loadData()
       return formatted
     },
-    [products, loadData]
+    [products, user, loadData]
   )
 
-  // ADD SALE (Database Trigger 2 validates stock, snapshots cost, calculates profit)
+  // ADD SALE (Database Trigger 3 validates stock, snapshots cost, calculates profit)
   const addSale = React.useCallback(
     async (data: {
       product_id: string
@@ -474,6 +319,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       sell_per_unit: number
       sold_at: string
     }): Promise<SaleRecord> => {
+      if (!isSupabaseConfigured || !supabase) {
+        throw new Error("Supabase is not configured.")
+      }
+      if (!user) {
+        throw new Error("कृपया पहले लॉगिन करें (Please log in to record sales)")
+      }
+
       const product = products.find((p) => p.id === data.product_id)
       if (!product) throw new Error("सामान नहीं मिला (Product not found)")
 
@@ -483,53 +335,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
       }
 
-      if (!isSupabaseConfigured || !supabase) {
-        const cost_at_sale = product.avg_cost
-        const { totalSale, profit } = calculateSaleProfit(
-          data.qty,
-          data.sell_per_unit,
-          cost_at_sale
-        )
-        const updatedStock = Math.max(0, product.stock_qty - data.qty)
-        setProducts((prev) =>
-          prev.map((p) =>
-            p.id === data.product_id ? { ...p, stock_qty: updatedStock } : p
-          )
-        )
-        const localSale: SaleRecord = {
-          id: `sale_${Date.now()}`,
-          product_id: data.product_id,
-          product_name: product.name,
-          qty: data.qty,
-          sell_per_unit: data.sell_per_unit,
-          cost_at_sale,
-          total_sale: totalSale,
-          profit,
-          sold_at: data.sold_at,
-          created_at: new Date().toISOString(),
-        }
-        setSales((prev) => [localSale, ...prev])
-        return localSale
-      }
-
-      const { data: userAuth } = await supabase.auth.getUser()
       const { data: inserted, error } = await supabase
         .from("sales")
         .insert([
           {
             product_id: data.product_id,
-            product_name: product.name,
             qty: data.qty,
             sell_per_unit: data.sell_per_unit,
             sold_at: data.sold_at,
-            user_id: userAuth?.user?.id || null,
+            user_id: user.id,
           },
         ])
         .select()
         .single()
 
       if (error) {
-        throw new Error(error.message)
+        throw new Error(error.message || "Failed to record sale in Supabase")
       }
 
       const formatted: SaleRecord = {
@@ -549,129 +370,123 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await loadData()
       return formatted
     },
-    [products, loadData]
+    [products, user, loadData]
   )
 
   // DELETE SALE (Database Trigger 4 restores stock in Supabase automatically)
   const deleteSale = React.useCallback(
     async (id: string): Promise<void> => {
-      if (!isSupabaseConfigured || !supabase) {
-        const sale = sales.find((s) => s.id === id)
-        if (sale) {
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === sale.product_id
-                ? { ...p, stock_qty: p.stock_qty + sale.qty }
-                : p
-            )
-          )
-          setSales((prev) => prev.filter((s) => s.id !== id))
-        }
-        return
-      }
+      if (!isSupabaseConfigured || !supabase || !user) return
 
-      const { error } = await supabase.from("sales").delete().eq("id", id)
+      const { error } = await supabase
+        .from("sales")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id)
+
       if (error) {
-        throw new Error(error.message)
+        throw new Error(error.message || "Failed to delete sale")
       }
 
-      setSales((prev) => prev.filter((s) => s.id !== id))
       await loadData()
     },
-    [sales, loadData]
+    [user, loadData]
   )
 
-  // DELETE PURCHASE (Database Trigger 2 reverts stock in Supabase automatically)
+  // DELETE PURCHASE (Database Trigger 2 reduces stock automatically)
   const deletePurchase = React.useCallback(
     async (id: string): Promise<void> => {
-      if (!isSupabaseConfigured || !supabase) {
-        const purchase = purchases.find((p) => p.id === id)
-        if (purchase) {
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === purchase.product_id
-                ? { ...p, stock_qty: Math.max(0, p.stock_qty - purchase.qty) }
-                : p
-            )
-          )
-          setPurchases((prev) => prev.filter((p) => p.id !== id))
-        }
-        return
-      }
+      if (!isSupabaseConfigured || !supabase || !user) return
 
-      const { error } = await supabase.from("purchases").delete().eq("id", id)
+      const { error } = await supabase
+        .from("purchases")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id)
+
       if (error) {
-        throw new Error(error.message)
+        throw new Error(error.message || "Failed to delete purchase")
       }
 
-      setPurchases((prev) => prev.filter((p) => p.id !== id))
       await loadData()
     },
-    [purchases, loadData]
+    [user, loadData]
+  )
+
+  // DELETE PRODUCT
+  const deleteProduct = React.useCallback(
+    async (id: string): Promise<void> => {
+      if (!isSupabaseConfigured || !supabase || !user) return
+
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id)
+
+      if (error) {
+        throw new Error(error.message || "Failed to delete product")
+      }
+
+      await loadData()
+    },
+    [user, loadData]
   )
 
   const resetToDefault = React.useCallback(() => {
-    setProducts(INITIAL_PRODUCTS)
-    setPurchases(INITIAL_PURCHASES)
-    setSales(INITIAL_SALES)
-  }, [])
+    loadData()
+  }, [loadData])
 
-  // FINANCIAL & INVENTORY METRICS
+  // DERIVED METRICS FOR DASHBOARD (All calculated directly from real Supabase rows)
   const metrics = React.useMemo(() => {
-    const today = todayDate
-    const currentMonth = today.slice(0, 7)
+    const today = getTodayDate()
+    const currentMonth = today.substring(0, 7) // "YYYY-MM"
 
-    let todaySales = 0
-    let todayProfit = 0
-    let monthProfit = 0
-    let todayPurchases = 0
+    // Today's Sales
+    const todaySalesRecords = sales.filter((s) => s.sold_at === today)
+    const todaySales = todaySalesRecords.reduce((acc, curr) => acc + curr.total_sale, 0)
+    const todayProfit = todaySalesRecords.reduce((acc, curr) => acc + curr.profit, 0)
 
-    const productProfitMap: Record<string, { name: string; profit: number; sales: number }> = {}
+    // Month's Profit
+    const monthSalesRecords = sales.filter((s) => s.sold_at && s.sold_at.startsWith(currentMonth))
+    const monthProfit = monthSalesRecords.reduce((acc, curr) => acc + curr.profit, 0)
 
+    // Today's Purchases
+    const todayPurchasesRecords = purchases.filter((p) => p.purchased_at === today)
+    const todayPurchases = todayPurchasesRecords.reduce((acc, curr) => acc + curr.total_cost, 0)
+
+    // Low stock items
+    const lowStockProducts = products.filter((p) => p.stock_qty <= p.low_stock_limit)
+    const lowStockCount = lowStockProducts.length
+
+    // Top Profit Products
+    const profitMap = new Map<string, { name: string; profit: number; sales: number }>()
     sales.forEach((s) => {
-      if (s.sold_at === today) {
-        todaySales += s.total_sale
-        todayProfit += s.profit
+      const existing = profitMap.get(s.product_id) || {
+        name: s.product_name ?? products.find((p) => p.id === s.product_id)?.name ?? "Unknown",
+        profit: 0,
+        sales: 0,
       }
-      if (s.sold_at.startsWith(currentMonth)) {
-        monthProfit += s.profit
-      }
-
-      if (!productProfitMap[s.product_id]) {
-        productProfitMap[s.product_id] = {
-          name: s.product_name || "सामान",
-          profit: 0,
-          sales: 0,
-        }
-      }
-      productProfitMap[s.product_id].profit += s.profit
-      productProfitMap[s.product_id].sales += s.total_sale
+      existing.profit += s.profit
+      existing.sales += s.total_sale
+      profitMap.set(s.product_id, existing)
     })
 
-    purchases.forEach((p) => {
-      if (p.purchased_at === today) {
-        todayPurchases += p.total_cost
-      }
-    })
-
-    const lowStockProducts = products.filter(
-      (p) => p.is_active && p.stock_qty <= p.low_stock_limit
-    )
-
-    const topProfitProducts = Object.values(productProfitMap)
+    const topProfitProducts = Array.from(profitMap.values())
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 5)
 
     return {
-      todaySales: Math.round(todaySales * 100) / 100,
-      todayProfit: Math.round(todayProfit * 100) / 100,
-      monthProfit: Math.round(monthProfit * 100) / 100,
-      todayPurchases: Math.round(todayPurchases * 100) / 100,
-      lowStockCount: lowStockProducts.length,
+      totalProducts: products.length,
+      todaySales,
+      todayProfit,
+      monthProfit,
+      todayPurchases,
+      lowStockCount,
       lowStockProducts,
       topProfitProducts,
     }
-  }, [products, purchases, sales, todayDate])
+  }, [sales, purchases, products])
 
   return (
     <StoreContext.Provider
@@ -687,6 +502,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         addSale,
         deleteSale,
         deletePurchase,
+        deleteProduct,
         resetToDefault,
         refreshData: loadData,
         metrics,
